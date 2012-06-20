@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "sudoku.h"
 
+// Please see .h file for most function descriptions
+
 int main(int argc, char *argv[]){
     if( do_tests()){
         printf("Failed tests\n");
@@ -26,6 +28,8 @@ int main(int argc, char *argv[]){
         return -1;
     }
     print_sudoku(puzzle);
+    free(puzzle);
+    free(check);
     return 0;
 }
 
@@ -65,6 +69,7 @@ int load_sudoku(sudoku *puzzle, char *filename){
             return -1;
         }
     }
+    fclose(fp);
     printf("Finished\n");
     return 0;
 }

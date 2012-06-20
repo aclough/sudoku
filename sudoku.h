@@ -26,16 +26,42 @@ typedef struct {
 } block;
 
 
+// Takes a name of a file containing a sudoku represented as SUDOKU_SIZE 
+// numbers seperated by whitespace, and loads them into the provided sudoku
+// structure
 int load_sudoku( sudoku*, char*);
+
+// Takes the first sudoku structure passed in and iterates solving it.  It
+// returns 0 if a solution is found, and -1 if it can no longer make progress.
+// The second argument is a check against which the solution is measured.  If
+// the forming solution deviates from the check the function also returns -1
 int solve_sudoku( sudoku*, sudoku*);
+
+// Compares the two solutions.  If they deviate in any solved space it returns
+// -1, else it returns 0
 int check_sudoku( sudoku*, sudoku*);
+
+// Returns the number of unsolved spaces in a sudoku
 int count_sudoku( sudoku*);
+
+// Takes a list of SUDOKU_LENGTH blocks and applies do_block() to each of them
 void do_sudoku( block[]);
+
+// Takes a row, colum, or box from a sudoku (a "block") and applies a solving 
+// iteration, asking both if there are any spaces that can have only one value,
+// and if there are any values that can have only one space.
 void do_block( element *[]);
+
+// Takes a sudoku and prints it to the screen
 void print_sudoku( sudoku*);
+
+// Does a diagnostic test to ensure that field_to_int() and int_to_field()
+// are working properly.
 int do_test();
 
 // Takes a bitfield and, if it corresponds to an int, will return that int
 // If it corresponds to 0 or more than 1 int, it will return 0
 int field_to_int(int);
+
+// Takes an integer and returns a bitfield that represents that integer.
 int int_to_field(int);

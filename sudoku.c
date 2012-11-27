@@ -13,11 +13,11 @@ static inline short field_to_short(short);
 static inline short short_to_field(short);
 static int check_sudoku(sudoku *, sudoku *);
 static int check_remaining(sudoku *);
-static void solve_block(block *);
+static int solve_block(block *);
 static inline int is_popcount_one(short);
 static inline int popcount(short);
 static void print_field(short x);
-static void regenerate_possibles(sudoku *);
+static void copy_sudoku(sudoku *, sudoku *);
 
 
 // Takes in a sudoku puzzle and optionally it's solution and
@@ -30,6 +30,7 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
     int remaining, last_remaining;
     int count=0;
     short saved_field;
+    sudoku saved_puzzle;
     block rows[9], colums[9], squares[9];
     for( x = 0; x < 9; x++){
         for( y = 0; y < 9; y++){
@@ -46,9 +47,10 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
     while(remaining){
         count++;
         for( x = 0; x < 9; x++){
-            solve_block(&rows[x]);
-            solve_block(&colums[x]);
-            solve_block(&squares[x]);
+            if(solve_block(&rows[x])    ||
+               solve_block(&colums[x])  ||
+               solve_block(&squares[x]))
+                return -1;
         }
 
         if(check_sudoku(puzzle, expected)){
@@ -57,15 +59,19 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
 
         last_remaining = remaining;
         remaining = check_remaining(puzzle);
+        printf("%d remaining\n", remaining);
         if(remaining == last_remaining){
             a = get_min_possible(puzzle);
             for(x = 1; x <= 9; x++){
                 if( puzzle->space[a/9][a%9].possibles & short_to_field(x)){
                     puzzle->space[a/9][a%9].value = short_to_field(x);
+                    printf("Trying %d at %d\n", x, a);
+                    copy_sudoku( &saved_puzzle, puzzle);
                     if( solve_sudoku( puzzle, expected) == 0){
                         return 0;
                     }
-                    regenerate_possibles( puzzle);
+                    printf("Exiting\n");
+                    copy_sudoku( puzzle, &saved_puzzle);
 
                 }
             }
@@ -76,12 +82,15 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
 }
 
 
-void solve_block(block* myblock){
+int solve_block(block* myblock){
     int x;
     short value_screen=0, once_screen=0, multi_screen=0;
     element *myspace;
     // Find the bit fields of the actual values
     for(x = 0; x < 9; x++){
+        // Our situation is invalid
+        if(myblock->space[x]->value & value_screen)
+            return -1;
         value_screen |= myblock->space[x]->value;
     }
     for(x = 0; x < 9; x++){
@@ -103,16 +112,15 @@ void solve_block(block* myblock){
     if(once_screen){
         for(x = 0; x < 9; x++){
             myspace = myblock->space[x];
-            // Set each space's value to those of it's possiblities for which 
+            // Set each space's value to those of it's possiblities for which
             // it's the only one in this block that can be a match for the value
-            // If this isn't a solution, it'll just be oring the value with 0
-            if(myspace->possibles && once_screen){
+            // If that doesn't work, do nothing
+            if( is_popcount_one(myspace->possibles & once_screen) && !myspace->value){
                 myspace->value |= myspace->possibles & once_screen;
             }
-            // I'm assuming here that I only get a single value bit from this.  If not
-            // I'll get an erorr message fairly quickly
         }
     }
+    return 0;
 }
 
 int get_min_possible(sudoku *puzzle){
@@ -173,8 +181,7 @@ void print_sudoku(sudoku *puzzle){
         for( y = 0; y < 9; y++){
             if(0 == y%3 && 0 != y) printf(" ");
             printf("%d ", field_to_short(puzzle->space[x][y].value));
-        }
-        printf("\n");
+        } printf("\n");
     }
 }
 
@@ -204,11 +211,12 @@ int load_sudoku(sudoku *puzzle, char *filename){
     return 0;
 }
 
-void regenerate_possibles( sudoku *puzzle){
+void copy_sudoku( sudoku *destination, sudoku *source){
     int x,y;
     for( x = 0; x < 9; x++){
         for( y = 0; y < 9; y++){
-            puzzle->space[x][y].possibles = (1<<9)-1;
+            destination->space[x][y].possibles = source->space[x][y].possibles; 
+            destination->space[x][y].value = source->space[x][y].value; 
         }
     }
 }
@@ -216,7 +224,9 @@ void regenerate_possibles( sudoku *puzzle){
 // Not too efficient, but not being used in time-critical places
 short field_to_short(short input){
     short index = 1;
-    if( !is_popcount_one(input)) return 0;
+    if( !is_popcount_one(input)){ 
+        return 0;
+    }
     while(input > 0){
         if(1 == (input % 2)){
             return index;

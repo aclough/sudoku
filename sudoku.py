@@ -9,10 +9,14 @@ NUM_BLOCKS = SUDOKU_SIZE // BLOCK_SIZE
 debug = False
 
 class Space:
+    """Data structure representing a sudoku space."""
     value = 0
     possible = set(possibilities)
 
 class SudokuGrid:
+    """Represents a sudoku grid.
+
+    It includes methods for loading, solving, and displaying."""
     _spaces = []
     _rows = []
     _colums = []
@@ -36,8 +40,10 @@ class SudokuGrid:
                     for x in range(first_row, first_row + 3) 
                     for y in range(first_colum, first_colum + 3) ] )
     def load(self, filename):
+        """Load a file as the puzzle."""
         self._load_helper(filename, self._spaces)
     def load_check(self, filename):
+        """Load a file as the solution."""
         self._load_helper(filename, self._checks)
         self._check_flag = True
     def _load_helper(self, filename, destination):
@@ -57,6 +63,7 @@ class SudokuGrid:
             raise ValueError("File contained " + str(index) + " elements!\n" +
                     str(SUDOKU_SIZE) + " required")
     def print(self):
+        """Print out the state of the sudoku."""
         for row in self._rows:
             line = ""
             for space in row:

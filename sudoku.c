@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "sudoku.h"
 
-/* An implementation of the sudoku solver */
+// Functions for loading a sudoku puzzle into a datastructure,
+// solving it, and printing the result.
 
 // These are views of rows, columns, or boxes of a sudoku that
 // can be passed to a generic solving function
@@ -12,7 +13,7 @@ typedef struct {
 static inline short field_to_short(short);
 static inline short short_to_field(short);
 static int check_sudoku(sudoku *, sudoku *);
-static int check_remaining(sudoku *);
+static int how_many_remaining(sudoku *);
 static int solve_block(block *);
 static inline int is_popcount_one(short);
 static inline int popcount(short);
@@ -42,11 +43,13 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
             squares[a].space[b] = &(puzzle->space[x][y]);
         }
     }
-    // Actual solving
-    remaining = check_remaining( puzzle);
+    remaining = how_many_remaining( puzzle);
     while(remaining){
         count++;
         for( x = 0; x < 9; x++){
+            // Solve by elimination
+            // If this is a recursive call with a guess that was
+            // wrong we'll need to abort.
             if(solve_block(&rows[x])    ||
                solve_block(&colums[x])  ||
                solve_block(&squares[x]))
@@ -58,23 +61,26 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
         }
 
         last_remaining = remaining;
-        remaining = check_remaining(puzzle);
-        printf("%d remaining\n", remaining);
+        remaining = how_many_remaining(puzzle);
+        // If elimination isn't making progress, guess and check
         if(remaining == last_remaining){
-            a = get_min_possible(puzzle);
+            a = get_most_constrained_space(puzzle);
             for(x = 1; x <= 9; x++){
                 if( puzzle->space[a/9][a%9].possibles & short_to_field(x)){
+
                     puzzle->space[a/9][a%9].value = short_to_field(x);
                     printf("Trying %d at %d\n", x, a);
                     copy_sudoku( &saved_puzzle, puzzle);
+
                     if( solve_sudoku( puzzle, expected) == 0){
                         return 0;
                     }
                     printf("Exiting\n");
                     copy_sudoku( puzzle, &saved_puzzle);
-
                 }
             }
+            // No guess worked out, so hopefully there was a 
+            // wrong guess earlier
             return -1;
         }
     }
@@ -86,35 +92,33 @@ int solve_block(block* myblock){
     int x;
     short value_screen=0, once_screen=0, multi_screen=0;
     element *myspace;
-    // Find the bit fields of the actual values
+    // Compose a bit field of the values of the currently solved spaces
     for(x = 0; x < 9; x++){
-        // Our situation is invalid
         if(myblock->space[x]->value & value_screen)
+            // A number appeared twice and we're in an invalid state
             return -1;
         value_screen |= myblock->space[x]->value;
     }
     for(x = 0; x < 9; x++){
         myspace = myblock->space[x];
-        // If something is a value, it can't be a possiblity
+        // Remove the values in the block from the space's possiblities
         myspace->possibles &= ~value_screen;
         if(is_popcount_one(myspace->possibles) && !myspace->value){
             myspace->value = myspace->possibles;
         }
-        // Add those possiblities that have already been spotted in
-        // the block to the multi_screen
+        // We want a screen of every value that's a possibility in more
+        // than one space, and a screen that's a possibility in at least one
+        // space
         multi_screen |= once_screen & myspace->possibles;
-        // And every possiblity to the once screen
         once_screen |= myspace->possibles;
     }
-    // remove values spotted multiple times from the once_screen
+    // And now a screen of every value that can only be in one square
     once_screen &= ~multi_screen;
-    // And if we got solutions from that
     if(once_screen){
         for(x = 0; x < 9; x++){
             myspace = myblock->space[x];
             // Set each space's value to those of it's possiblities for which
             // it's the only one in this block that can be a match for the value
-            // If that doesn't work, do nothing
             if( is_popcount_one(myspace->possibles & once_screen) && !myspace->value){
                 myspace->value |= myspace->possibles & once_screen;
             }
@@ -123,7 +127,7 @@ int solve_block(block* myblock){
     return 0;
 }
 
-int get_min_possible(sudoku *puzzle){
+int get_most_constrained_space(sudoku *puzzle){
     int i, min_space, value;
     int min_value = 10;
     for(i = 0; i < (9*9); i++){
@@ -136,7 +140,7 @@ int get_min_possible(sudoku *puzzle){
     return min_space;
 }
 
-int check_remaining(sudoku *puzzle){
+int how_many_remaining(sudoku *puzzle){
     int x,y;
     int remaining = 9*9;
     for( x = 0; x < 9; x++){
@@ -247,19 +251,19 @@ short short_to_field(short x){
     }
 }
 
-// returns 1 if popcount of input is 1, else 0
 int is_popcount_one(short x){
     if( !x) return 0; // popcount == 0
-    if(x & (x-1)) return 0; // popcount >1
+    if(x & (x-1)) return 0; // popcount > 1
     return 1;  // popcount = 1
 }
 
 int popcount(short x){
     int c = 0;
-    for (; x > 0; x &= x -1) c++;
+    for ( ; x > 0; x &= x -1) c++;
     return c;
 }
 
+// To be used for debugging
 void print_field(short x){
     int i;
     for(i = 1; i < 10; i++){

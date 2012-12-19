@@ -10,34 +10,32 @@ class Puzzle:
     _spaces = [] # All the spaces in the puzzle [Space]
     _possibles = []
     _solution = []
+    _depth = 0
     def __init__(self, origonal=None):
-        if debug: print("Starting init")
         if origonal:
             self._unsolved = origonal._unsolved
             self._spaces = []
             self._possibles = []
+            self._depth = origonal._depth
+            if debug: print("Depth: " + str(self._depth))
             if origonal._solution:
                 self._solution = origonal._solution
             # Can't just copy the lists, we need to mutate the new copy.
             for space in origonal._spaces:
                 self._spaces.append(space)
             for possible in origonal._possibles:
-                self._possibles.append(set(possible))
-        if debug: print("Finishing init")
+                self._possibles.append(possible)
 
-    def get_row_iter(self, x):
-        for i in range(9):
-            index = 9*x + i
-            yield self._spaces[index], self._possibles[index]
-    def get_col_iter(self, x):
-        for i in range(9):
-            index = x + 9*i
-            yield self._spaces[index], self._possibles[index]
-    def get_blk_iter(self, x):
+    def get_row(self, x):
+        """Get the indices of the specified row"""
+        return [9*x + i for i in range(9)]
+    def get_column(self, x):
+        """Get the indices of the specified column"""
+        return [x + 9*i for i in range(9)]
+    def get_block(self, x):
+        """Get the indices of the specified block"""
         block_index = 3*(x%3) + 27*(x//3)
-        for i in range(9):
-            index = block_index + (i%3) + 9*(i//3)
-            yield self._spaces[index], self._possibles[index]
+        return [ block_index + (i%3) + 9*(i//3) for i in range(9)]
 
     def load(self, filename):
         """Load a file as the puzzle."""
@@ -68,9 +66,13 @@ class Puzzle:
 
     def print(self):
         """Print out the state of the sudoku."""
-        for x in range(9):
-            print([ str(num) + " " for num,pos in self.get_row_iter(x)])
         print("")
+        for y in range(9):
+            for x in range(9):
+                print(self._spaces[9*y + x], end=" ")
+                if (x%3 == 2): print(" ", end="")
+            print("")
+            if(y%3 == 2): print("")
 
     def solve(self):
         """Solves the sudoku
@@ -80,23 +82,29 @@ class Puzzle:
         Puzzle there with a guess at that space, calls solve() on that puzzle
         and if it doens't work guesses again"""
         while True:
+            if debug: print("reducing")
             for i in range(9):
-                self._reduce(self.get_row_iter(i))
-                self._reduce(self.get_col_iter(i))
-                self._reduce(self.get_blk_iter(i))
+                self._reduce(self.get_row(i))
+                self._reduce(self.get_column(i))
+                self._reduce(self.get_block(i))
+            if debug: print("sifting")
             for i in range(len(self._spaces)):
-                if len( self._possibles[i]) is 1:
-                    self._spaces[i] = self.possibles[i].pop()
+                if not self._spaces[i] and len( self._possibles[i]) is 1:
+                    self._spaces[i] = self._possibles[i].pop()
+            if debug: print("filling")
+            for i in range(9):
+                self._fill(self.get_row(i))
+                self._fill(self.get_column(i))
+                self._fill(self.get_block(i))
             unsolved, index = self.check()
             if unsolved < self._unsolved:
-                if debug: print(unsolved)
+                if debug: print("Unsolved: ")
                 self._unsolved = unsolved
                 if unsolved == 0:
-                    self.print()
                     return self._spaces
             else:
                 break
-        if debug: print("Entering")
+        self._depth += 1
         for num in self._possibles[index]:
             new_puzzle = Puzzle(self)
             new_puzzle._spaces[index] = num
@@ -105,9 +113,8 @@ class Puzzle:
                 return self._spaces
             except ValueError:
                 continue
-            if debug: print("Exiting")
             raise ValueError("No solution found")
-    
+
     def check(self):
         """Performs pre-recursion checks
 
@@ -123,17 +130,32 @@ class Puzzle:
                 unsolved += 1
             if self._solution:
                 if num is not self._solution[i] and num is not 0:
-                    if debug: print("Exiting2")
+                    if debug: print("Exiting2 - index: " + self.pprint_index(i))
+                    if debug: print("Possibles at index: " + str(self._possibles[i]))
+                    self.print()
                     raise ValueError("Sudoku not consistant with solution")
         if min is 0:
             if debug: print("Exiting3")
             raise ValueError("Sudoku cannot be solved due to overrestriction")
         return unsolved, min_index
 
-    def _reduce(self, local_iter):
-       value_set = set(i[0] for i in local_iter)
-       for num,pos in local_iter:
-           pos.difference_update(value_set)
+    def _reduce(self, indices):
+       """Reduces possiblities based on actual space values"""
+       value_set = set(self._spaces[i] for i in indices)
+       for i in indices:
+           self._possibles[i].difference_update(value_set)
+
+    def _fill(self, indices):
+       """Solve spaces where there is only one possible location for a number"""
+       for num in numbers:
+           if num in [self._spaces[i] for i in indices]:
+               break
+           maybes = [i for i in indices if \
+                            ( num in self._possibles[i] and not self._spaces[i] ) ]
+           if len(maybes) == 1:
+               self._spaces[ maybes[0] ] = num
+    def pprint_index(self, i):
+        return str(i%9) + "," + str(i//9)
 
 
 if __name__=='__main__':

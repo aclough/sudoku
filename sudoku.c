@@ -69,13 +69,11 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
                 if( puzzle->space[a/9][a%9].possibles & short_to_field(x)){
 
                     puzzle->space[a/9][a%9].value = short_to_field(x);
-                    printf("Trying %d at %d\n", x, a);
                     copy_sudoku( &saved_puzzle, puzzle);
 
                     if( solve_sudoku( puzzle, expected) == 0){
                         return 0;
                     }
-                    printf("Exiting\n");
                     copy_sudoku( puzzle, &saved_puzzle);
                 }
             }
@@ -187,6 +185,7 @@ void print_sudoku(sudoku *puzzle){
             printf("%d ", field_to_short(puzzle->space[x][y].value));
         } printf("\n");
     }
+    printf("\n");
 }
 
 

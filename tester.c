@@ -24,6 +24,7 @@ int main(int argc, char *argv[]){
             return -1;
         }
     }
+    printf("\nResult:\n");
     print_sudoku(&puzzle);
     return 0;
 }

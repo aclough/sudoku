@@ -67,23 +67,57 @@ proc printSudoku(sudoku: TSudoku) =
     if (x mod 3) == 2:
       echo ""
 
+proc setLoc(index, value: int) =
+  let b = getBlock(index)
+  let r = getRow(index)
+  let c = getColumn(index)
+  if value in (blockPos[b] * colPos[c] * rowPos[r]):
+    sudoku[index] = value
+    excl(blockPos[b], value)
+    excl(colPos[c], value)
+    excl(rowPos[r], value)
+  else:
+    echo("Error setting ", index, " to ", value)
+    printSudoku(sudoku)
+    echo blockPos[b]
+    echo colPos[c]
+    echo rowPos[r]
+    echo (blockPos[b] + colPos[c] + rowPos[r])
+    raise newException(EOS, "set fail")
+
+proc clrLoc(index, value: int) =
+  let b = getBlock(index)
+  let r = getRow(index)
+  let c = getColumn(index)
+  if value notin (blockPos[b] + colPos[c] + rowPos[r]):
+    sudoku[index] = 0
+    incl(blockPos[b], value)
+    incl(colPos[c], value)
+    incl(rowPos[r], value)
+  else:
+    echo("Error clearing ", index, " of ", value)
+    printSudoku(sudoku)
+    echo blockPos[b]
+    echo colPos[c]
+    echo rowPos[r]
+    echo (blockPos[b] + colPos[c] + rowPos[r])
+    raise newException(EOS, "clear fail")
+
 proc loadSudoku(fileName: String): TSudoku =
   var file = open(fileName)
   try:
     var index = 0
     while true:
       let c = readChar(file)
-      echo c
       try:
-        result[index] = parseInt($c) # This is a hack and I should figure out
-                                     # a better way
-        echo result[index]
+        let n = parseInt($c) # This is a hack and I should figure out a better way
+        if n != 0:
+          setLoc(index, n)
         index += 1
       except EInvalidValue:
         continue
       if index == 81:
         break
-    echo "success"
   except EInvalidValue:
     echo "Could not parse input file"
   except EIO:
@@ -91,5 +125,48 @@ proc loadSudoku(fileName: String): TSudoku =
   finally:
     close(file)
 
+
+proc getMostConstrained(): int =
+  var numPos = 100;
+  for i in 0..80:
+    if sudoku[i] != 0:
+      continue
+    let b = getBlock(i)
+    let r = getRow(i)
+    let c = getColumn(i)
+    let pos = blockPos[b] * colPos[c] * rowPos[r]
+    let num = card(pos)
+    if num < numPos:
+      result = i
+      numPos = num
+  echo(result, " ", numPos)
+
+proc solve(): bool =
+  let i = getMostConstrained()
+  if i == 0:
+    return true
+  if sudoku[i] != 0:
+    return false
+  let b = getBlock(i)
+  let r = getRow(i)
+  let c = getColumn(i)
+  let pos = blockPos[b] * colPos[c] * rowPos[r]
+  if pos == {}:
+    return false
+  for n in pos:
+    setLoc(i, n)
+    if solve():
+      return true
+    clrLoc(i, n)
+  return false
+
 sudoku = loadSudoku("puzzle.txt")
 printSudoku(sudoku)
+
+echo "Solving"
+
+if solve():
+  echo "Solved it!"
+  printSudoku sudoku
+else:
+  echo "Error"

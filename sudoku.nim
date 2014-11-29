@@ -1,3 +1,5 @@
+import strutils
+
 type
   TSudoku = array[0..80, 0..9] # 0 is blank
   TSegment = array[0..8, int]
@@ -53,4 +55,41 @@ var
 
 # Utility functions
 
-proc
+proc printSudoku(sudoku: TSudoku) =
+  echo ""
+  for x in 0..8:
+    var str = ""
+    for y in 0..8:
+      if (y mod 3) == 0:
+        str = str & " "
+      str = str & " " & $sudoku[9 * x + y]
+    echo str
+    if (x mod 3) == 2:
+      echo ""
+
+proc loadSudoku(fileName: String): TSudoku =
+  var file = open(fileName)
+  try:
+    var index = 0
+    while true:
+      let c = readChar(file)
+      echo c
+      try:
+        result[index] = parseInt($c) # This is a hack and I should figure out
+                                     # a better way
+        echo result[index]
+        index += 1
+      except EInvalidValue:
+        continue
+      if index == 81:
+        break
+    echo "success"
+  except EInvalidValue:
+    echo "Could not parse input file"
+  except EIO:
+    echo "IO error"
+  finally:
+    close(file)
+
+sudoku = loadSudoku("puzzle.txt")
+printSudoku(sudoku)

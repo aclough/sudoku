@@ -3,6 +3,7 @@ import strutils
 type
   TSudoku = array[0..80, 0..9] # 0 is blank
   TSegment = array[0..8, int]
+  TSegmentNums = tuple[b,c,r:int]
   TSegmentList = array[0..8, Tsegment]
   TPossibles = set[1..9]
   TSegmentPosList = array[0..8, TPossibles]
@@ -33,6 +34,11 @@ proc getBlockSegments(): TSegmentList =
   for i in low(TSudoku)..high(TSudoku):
     result[getBlock(i)][getBlockIndex(i)] = i
 
+proc getSegments(i: int): TSegmentNums =
+  result.b = getBlock(i)
+  result.r = getRow(i)
+  result.c = getColumn(i)
+
 const
   blocks = getBlockSegments()
   rows = getRowSegments()
@@ -47,7 +53,8 @@ proc getInitialSegmentPos(): TSegmentPosList =
   for i in low(result)..high(result):
     result[i] = full
 
-var
+var # It would be better to pass all of these in to solve() as pointers, but
+    # I'm not sure how.
   sudoku: TSudoku
   blockPos: TSegmentPosList = getInitialSegmentPos()
   colPos: TSegmentPosList = getInitialSegmentPos()
@@ -68,39 +75,35 @@ proc printSudoku(sudoku: TSudoku) =
       echo ""
 
 proc setLoc(index, value: int) =
-  let b = getBlock(index)
-  let r = getRow(index)
-  let c = getColumn(index)
-  if value in (blockPos[b] * colPos[c] * rowPos[r]):
+  let s = getSegments(index)
+  if value in (blockPos[s.b] * colPos[s.c] * rowPos[s.r]):
     sudoku[index] = value
-    excl(blockPos[b], value)
-    excl(colPos[c], value)
-    excl(rowPos[r], value)
+    excl(blockPos[s.b], value)
+    excl(colPos[s.c], value)
+    excl(rowPos[s.r], value)
   else:
     echo("Error setting ", index, " to ", value)
     printSudoku(sudoku)
-    echo blockPos[b]
-    echo colPos[c]
-    echo rowPos[r]
-    echo (blockPos[b] + colPos[c] + rowPos[r])
+    echo blockPos[s.b]
+    echo colPos[s.c]
+    echo rowPos[s.r]
+    echo (blockPos[s.b] + colPos[s.c] + rowPos[s.r])
     raise newException(EOS, "set fail")
 
 proc clrLoc(index, value: int) =
-  let b = getBlock(index)
-  let r = getRow(index)
-  let c = getColumn(index)
-  if value notin (blockPos[b] + colPos[c] + rowPos[r]):
+  let s = getSegments(index)
+  if value notin (blockPos[s.b] + colPos[s.c] + rowPos[s.r]):
     sudoku[index] = 0
-    incl(blockPos[b], value)
-    incl(colPos[c], value)
-    incl(rowPos[r], value)
+    incl(blockPos[s.b], value)
+    incl(colPos[s.c], value)
+    incl(rowPos[s.r], value)
   else:
     echo("Error clearing ", index, " of ", value)
     printSudoku(sudoku)
-    echo blockPos[b]
-    echo colPos[c]
-    echo rowPos[r]
-    echo (blockPos[b] + colPos[c] + rowPos[r])
+    echo blockPos[s.b]
+    echo colPos[s.c]
+    echo rowPos[s.r]
+    echo (blockPos[s.b] + colPos[s.c] + rowPos[s.r])
     raise newException(EOS, "clear fail")
 
 proc loadSudoku(fileName: String): TSudoku =
@@ -110,7 +113,7 @@ proc loadSudoku(fileName: String): TSudoku =
     while true:
       let c = readChar(file)
       try:
-        let n = parseInt($c) # This is a hack and I should figure out a better way
+        let n = parseInt($c) # There must be a better way than "parseInt($c)"
         if n != 0:
           setLoc(index, n)
         index += 1
@@ -131,15 +134,12 @@ proc getMostConstrained(): int =
   for i in 0..80:
     if sudoku[i] != 0:
       continue
-    let b = getBlock(i)
-    let r = getRow(i)
-    let c = getColumn(i)
-    let pos = blockPos[b] * colPos[c] * rowPos[r]
+    let s = getSegments(i)
+    let pos = blockPos[s.b] * colPos[s.c] * rowPos[s.r]
     let num = card(pos)
     if num < numPos:
       result = i
       numPos = num
-  echo(result, " ", numPos)
 
 proc solve(): bool =
   let i = getMostConstrained()
@@ -147,10 +147,8 @@ proc solve(): bool =
     return true
   if sudoku[i] != 0:
     return false
-  let b = getBlock(i)
-  let r = getRow(i)
-  let c = getColumn(i)
-  let pos = blockPos[b] * colPos[c] * rowPos[r]
+  let s = getSegments(i)
+  let pos = blockPos[s.b] * colPos[s.c] * rowPos[s.r]
   if pos == {}:
     return false
   for n in pos:
@@ -160,7 +158,8 @@ proc solve(): bool =
     clrLoc(i, n)
   return false
 
-sudoku = loadSudoku("puzzle.txt")
+sudoku = loadSudoku("puzzle.txt") # Need to figure out how to take this as a
+                                  # command line argument
 printSudoku(sudoku)
 
 echo "Solving"

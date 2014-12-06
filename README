@@ -2,8 +2,4 @@ Sudoku Collection
 
 I've found I like sudoku solvers a programming exercise, with the
 problem being just complex enough to be interesting in forcing you
-to think about data structures.  Unfortunatly I lost a few previous
-one's I'd done in a computer move (silly, I know) I only have this
-Python one that I did for python3 and to explore some new features.
-
-I'll probably try a Haskell one next.
+to think about data structures.

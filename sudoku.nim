@@ -6,9 +6,6 @@ type
   TSudoku = array[0..80, 0..9] # 0 is blank
   TConstraints = tuple[b,c,r:array[0..8, TPossibles]]
 
-const
-  finished = high(TSudoku) + 1
-
 proc getRow(i: int): int =
   return i div 9
 
@@ -83,41 +80,39 @@ proc loadSudoku(fileName: string, con: var TConstraints): TSudoku =
     close(file)
 
 
-proc getMostConstrained(sudoku: TSudoku, con: TConstraints): int =
+proc getMostConstrained(sudoku: TSudoku, con: TConstraints): tuple[most: int, pos: TPossibles, fin, fail: bool] =
   var numPos = 100;
   for i in 0..80:
     if sudoku[i] != 0:
       if i == 80 and numPos == 100:
-        return finished
-      else:
-        continue
+        result.fin = true
+      continue
     let s = getSegments(i)
     let pos = con.b[s.b] * con.c[s.c] * con.r[s.r]
     let num = card(pos)
     if num < numPos:
-      result = i
+      result.most = i
+      result.pos = pos
       numPos = num
       if num == 1:
         break
+      elif num == 0:
+        result.fail = true
 
 proc solve(sudoku: var TSudoku, con: var TConstraints): bool =
-  let i = getMostConstrained(sudoku, con)
-  if i == finished:
+  let c = getMostConstrained(sudoku, con)
+  if c.fin:
     return true
-  if sudoku[i] != 0:
+  if c.fail:
     return false
-  let s = getSegments(i)
-  let pos = con.b[s.b] * con.c[s.c] * con.r[s.r]
-  if pos == {}:
-    return false
-  for n in pos:
-    setLoc(sudoku, con, i, n)
+  for n in c.pos:
+    setLoc(sudoku, con, c.most, n)
     if solve(sudoku, con):
       return true
-    clrLoc(sudoku, con, i, n)
+    clrLoc(sudoku, con, c.most, n)
   return false
 
-var 
+var
   m_sudoku: TSudoku
   m_con = getInitialConstraints()
 try:

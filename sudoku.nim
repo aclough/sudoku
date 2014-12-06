@@ -1,34 +1,35 @@
 import strutils, os
 
+# This is a quick problem to solve a sudoku
+# Sudokus are represented as an array of 81 values, set to 1 to 9 if
+# they've been given a value and set to 0 if they're still blank.
+#
+# Each cell in the grid is a member of three segments: the row, the
+# column, and the block which are used to constrain placement in that
+# spot.  For brevity row, column, and block are refered to as r,c, and b
+#
+# This solver works by a heuristic guided search that does not need to
+# create a copy for each guess because everything needed to back out a
+# guess is stored on the stack.
+
 type
   TSegmentNums = tuple[b,c,r:int]
-  TPossibles = set[1..9]
+  TPossibles = set[1..9] # Values remaining for placement in a segment
   TSudoku = tuple[grid: array[0..80, 0..9], b,c,r:array[0..8, TPossibles]]
 
-proc getRow(i: int): int =
-  return i div 9
-
-proc getColumn(i: int): int =
-  return i mod 9
-
-proc getBlock(i: int): int =
-  return (getRow(i) div 3) + 3*(getColumn(i) div 3)
-
 proc getSegments(i: int): TSegmentNums =
-  result.b = getBlock(i)
-  result.r = getRow(i)
-  result.c = getColumn(i)
+  result.r = i div 9
+  result.c = i mod 9
+  result.b = (result.r div 3) + 3*(result.c div 3)
 
 proc setInitialConstraints(sudoku: var TSudoku) =
-  var full: TPossibles
+  var all: TPossibles
   for i in 1..9:
-    incl(full, i)
+    incl(all, i)
   for i in 0..8:
-    sudoku.b[i] = full
-    sudoku.c[i] = full
-    sudoku.r[i] = full
-
-# Utility functions
+    sudoku.b[i] = all
+    sudoku.c[i] = all
+    sudoku.r[i] = all
 
 proc `$`(sudoku: TSudoku): string =
   var str = ""
@@ -57,7 +58,7 @@ proc clrLoc(sudoku: var TSudoku, index, value: int) =
   incl(sudoku.r[s.r], value)
 
 proc loadSudoku(fileName: string): TSudoku =
-  setInitialConstraints(result)
+  result.setInitialConstraints()
   var file = open(fileName)
   try:
     var index = 0
@@ -66,7 +67,7 @@ proc loadSudoku(fileName: string): TSudoku =
       try:
         let n = parseInt($c) # There must be a better way than "parseInt($c)"
         if n != 0:
-          setLoc(result, index, n)
+          result.setLoc(index, n)
         index += 1
       except EInvalidValue:
         continue
@@ -80,37 +81,35 @@ proc loadSudoku(fileName: string): TSudoku =
     close(file)
 
 
-proc getMostConstrained(sudoku: TSudoku): tuple[most: int, pos: TPossibles, fin, fail: bool] =
+proc getMostConstrained(sudoku: TSudoku): tuple[index: int, pos: TPossibles, finished, fail: bool] =
   var numPos = 100;
   for i in 0..80:
     if sudoku.grid[i] != 0:
-      if i == 80 and numPos == 100:
-        result.fin = true
       continue
     let s = getSegments(i)
     let pos = sudoku.b[s.b] * sudoku.c[s.c] * sudoku.r[s.r]
     let num = card(pos)
     if num < numPos:
-      result.most = i
+      result.index = i
       result.pos = pos
       numPos = num
-      if num == 1:
-        break
-      elif num == 0:
+      if num == 0:
         result.fail = true
+  if numPos == 100: # We never found a blank square
+    result.finished = true
 
 proc solve(sudoku: var TSudoku): bool =
   let c = getMostConstrained(sudoku)
-  if c.fin:
+  if c.finished:
     return true
   if c.fail:
     return false
   for n in c.pos:
-    setLoc(sudoku, c.most, n)
-    if solve(sudoku):
+    sudoku.setLoc(c.index, n)
+    if sudoku.solve():
       return true
-    clrLoc(sudoku, c.most, n)
-  return false
+    sudoku.clrLoc(c.index, n)
+  return false # there were no valid moves at c.pos so go back
 
 var
   m_sudoku: TSudoku
@@ -126,4 +125,4 @@ if solve(m_sudoku):
   echo "Solved it!"
   echo m_sudoku
 else:
-  echo "Error"
+  echo "Unable to solve"

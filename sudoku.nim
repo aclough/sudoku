@@ -6,30 +6,30 @@ import strutils, os
 #
 # Each cell in the grid is a member of three segments: the row, the
 # column, and the block which are used to constrain placement in that
-# spot.  For brevity row, column, and block are refered to as r,c, and b
+# spot.
 #
 # This solver works by a heuristic guided search that does not need to
 # create a copy for each guess because everything needed to back out a
 # guess is stored on the stack.
 
 type
-  TSegmentNums = tuple[b,c,r:int]
+  TSegmentNums = tuple[blck,col,row:int]
   TPossibles = set[1..9] # Values remaining for placement in a segment
-  TSudoku = tuple[grid: array[0..80, 0..9], b,c,r:array[0..8, TPossibles]]
+  TSudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, TPossibles]]
 
-proc getSegments(i: int): TSegmentNums =
-  result.r = i div 9
-  result.c = i mod 9
-  result.b = (result.r div 3) + 3*(result.c div 3)
+proc getSegmentIndices(i: int): TSegmentNums =
+  result.row = i div 9
+  result.col = i mod 9
+  result.blck = (result.row div 3) + 3*(result.col div 3)
 
 proc setInitialConstraints(sudoku: var TSudoku) =
   var all: TPossibles
   for i in 1..9:
     incl(all, i)
   for i in 0..8:
-    sudoku.b[i] = all
-    sudoku.c[i] = all
-    sudoku.r[i] = all
+    sudoku.blck[i] = all
+    sudoku.col[i] = all
+    sudoku.row[i] = all
 
 proc `$`(sudoku: TSudoku): string =
   var str = ""
@@ -44,18 +44,18 @@ proc `$`(sudoku: TSudoku): string =
   return str
 
 proc setLoc(sudoku: var TSudoku, index, value: int) =
-  let s = getSegments(index)
+  let s = getSegmentIndices(index)
   sudoku.grid[index] = value
-  excl(sudoku.b[s.b], value)
-  excl(sudoku.c[s.c], value)
-  excl(sudoku.r[s.r], value)
+  excl(sudoku.blck[s.blck], value)
+  excl(sudoku.col[s.col], value)
+  excl(sudoku.row[s.row], value)
 
 proc clrLoc(sudoku: var TSudoku, index, value: int) =
-  let s = getSegments(index)
+  let s = getSegmentIndices(index)
   sudoku.grid[index] = 0
-  incl(sudoku.b[s.b], value)
-  incl(sudoku.c[s.c], value)
-  incl(sudoku.r[s.r], value)
+  incl(sudoku.blck[s.blck], value)
+  incl(sudoku.col[s.col], value)
+  incl(sudoku.row[s.row], value)
 
 proc loadSudoku(fileName: string): TSudoku =
   result.setInitialConstraints()
@@ -81,21 +81,21 @@ proc loadSudoku(fileName: string): TSudoku =
     close(file)
 
 
-proc getMostConstrained(sudoku: TSudoku): tuple[index: int, pos: TPossibles, finished, fail: bool] =
-  var numPos = 100;
+proc getMostConstrained(sudoku: TSudoku): tuple[index: int, possibles: TPossibles, finished, fail: bool] =
+  var lowNum = 100;
   for i in 0..80:
     if sudoku.grid[i] != 0:
       continue
-    let s = getSegments(i)
-    let pos = sudoku.b[s.b] * sudoku.c[s.c] * sudoku.r[s.r]
-    let num = card(pos)
-    if num < numPos:
+    let s = getSegmentIndices(i)
+    let possibles = sudoku.blck[s.blck] * sudoku.col[s.col] * sudoku.row[s.row]
+    let num = card(possibles)
+    if num < lowNum:
       result.index = i
-      result.pos = pos
-      numPos = num
+      result.possibles = possibles
+      lowNum = num
       if num == 0:
         result.fail = true
-  if numPos == 100: # We never found a blank square
+  if lowNum == 100: # We never found a blank square
     result.finished = true
 
 proc solve(sudoku: var TSudoku): bool =
@@ -104,7 +104,7 @@ proc solve(sudoku: var TSudoku): bool =
     return true
   if c.fail:
     return false
-  for n in c.pos:
+  for n in c.possibles:
     sudoku.setLoc(c.index, n)
     if sudoku.solve():
       return true

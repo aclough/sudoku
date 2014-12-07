@@ -80,35 +80,46 @@ proc loadSudoku(fileName: string): TSudoku =
   finally:
     close(file)
 
-
-proc getMostConstrained(sudoku: TSudoku): tuple[index: int, possibles: TPossibles, finished, fail: bool] =
-  var lowNum = 100;
-  for i in 0..80:
-    if sudoku.grid[i] != 0:
-      continue
-    let s = getSegmentIndices(i)
-    let possibles = sudoku.blck[s.blck] * sudoku.col[s.col] * sudoku.row[s.row]
-    let num = card(possibles)
-    if num < lowNum:
-      result.index = i
-      result.possibles = possibles
-      lowNum = num
-      if num == 0:
-        result.fail = true
-  if lowNum == 100: # We never found a blank square
-    result.finished = true
+proc backout(sudoku: var TSudoku, backouts: seq[tuple[i, n: int]]) =
+  for b in backouts:
+    sudoku.clrLoc(b.i, b.n)
 
 proc solve(sudoku: var TSudoku): bool =
-  let c = getMostConstrained(sudoku)
-  if c.finished:
-    return true
-  if c.fail:
-    return false
-  for n in c.possibles:
-    sudoku.setLoc(c.index, n)
+  var
+    mostConstrained: int
+    possibilities: TPossibles
+    setEarly: seq[tuple[i,n:int]] = @[]
+  block getMostConstrained:
+    var lowNum = 100
+    for i in 0..80:
+      if sudoku.grid[i] != 0:
+        continue
+      let s = getSegmentIndices(i)
+      let possibles = sudoku.blck[s.blck] * sudoku.col[s.col] * sudoku.row[s.row]
+      let num = card(possibles)
+      if num < lowNum:
+        if num == 0:
+          sudoku.backout(setEarly)
+          return false # No valid moves so back out of this search branch
+        elif num == 1:
+          # There's a single valid move for this spot so we'll set it eagerly now rather
+          # than waiting and trying it.
+          for n in possibles:
+            sudoku.setLoc(i,n)
+            setEarly.add((i,n))
+          continue
+        else:
+          mostConstrained = i
+          possibilities = possibles
+          lowNum = num
+    if lowNum == 100: # We never found a blank square
+      return true
+  for n in possibilities:
+    sudoku.setLoc(mostConstrained, n)
     if sudoku.solve():
       return true
-    sudoku.clrLoc(c.index, n)
+    sudoku.clrLoc(mostConstrained, n)
+  sudoku.backout(setEarly)
   return false # there were no valid moves at c.pos so go back
 
 var

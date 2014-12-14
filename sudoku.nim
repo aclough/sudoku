@@ -1,5 +1,7 @@
 import strutils, os
 
+const debug = true
+
 # This is a quick problem to solve a sudoku
 # Sudokus are represented as an array of 81 values, set to 1 to 9 if
 # they've been given a value and set to 0 if they're still blank.
@@ -52,6 +54,9 @@ proc setLoc(sudoku: var TSudoku, index, value: int) =
 
 proc clrLoc(sudoku: var TSudoku, index, value: int) =
   let s = getSegmentIndices(index)
+  when debug:
+    if sudoku.grid[index] != value:
+      raise newException(EInvalidValue, $index & " cannot be cleared of value " & $value)
   sudoku.grid[index] = 0
   incl(sudoku.blck[s.blck], value)
   incl(sudoku.col[s.col], value)
@@ -88,7 +93,7 @@ proc solve(sudoku: var TSudoku): bool =
   var
     mostConstrained: int
     possibilities: TPossibles
-    setEarly: seq[tuple[i,n:int]] = @[]
+    eagerMoves: seq[tuple[i,n:int]] = @[]
   block getMostConstrained:
     var lowNum = 100
     for i in 0..80:
@@ -99,14 +104,14 @@ proc solve(sudoku: var TSudoku): bool =
       let num = card(possibles)
       if num < lowNum:
         if num == 0:
-          sudoku.backout(setEarly)
+          sudoku.backout(eagerMoves)
           return false # No valid moves so back out of this search branch
         elif num == 1:
           # There's a single valid move for this spot so we'll set it eagerly now rather
           # than waiting and trying it.
           for n in possibles:
             sudoku.setLoc(i,n)
-            setEarly.add((i,n))
+            eagerMoves.add((i,n))
           continue
         else:
           mostConstrained = i
@@ -119,7 +124,7 @@ proc solve(sudoku: var TSudoku): bool =
     if sudoku.solve():
       return true
     sudoku.clrLoc(mostConstrained, n)
-  sudoku.backout(setEarly)
+  sudoku.backout(eagerMoves)
   return false # there were no valid moves at c.pos so go back
 
 var

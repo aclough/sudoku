@@ -85,9 +85,10 @@ proc loadSudoku(fileName: string): TSudoku =
   finally:
     close(file)
 
-proc backout(sudoku: var TSudoku, backouts: seq[tuple[i, n: int]]) =
-  for b in backouts:
+template backout(sudoku: TSudoku, toRemove: seq[tuple[i, n: int]]): stmt =
+  for b in toRemove:
     sudoku.clrLoc(b.i, b.n)
+  return false
 
 proc solve(sudoku: var TSudoku): bool =
   var
@@ -104,8 +105,7 @@ proc solve(sudoku: var TSudoku): bool =
       let num = card(possibles)
       if num < lowNum:
         if num == 0:
-          sudoku.backout(eagerMoves)
-          return false # No valid moves so back out of this search branch
+          sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
         elif num == 1:
           # There's a single valid move for this spot so we'll set it eagerly now rather
           # than waiting and trying it.
@@ -124,8 +124,7 @@ proc solve(sudoku: var TSudoku): bool =
     if sudoku.solve():
       return true
     sudoku.clrLoc(mostConstrained, n)
-  sudoku.backout(eagerMoves)
-  return false # there were no valid moves at c.pos so go back
+  sudoku.backout(eagerMoves) # there were no valid moves at c.pos so go back
 
 var
   m_sudoku: TSudoku

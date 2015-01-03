@@ -19,19 +19,23 @@ type
   TPossibles = set[1..9] # Values remaining for placement in a segment
   TSudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, TPossibles]]
 
-proc getSegmentIndices(i: int): TSegmentNums =
+proc getIndices(i: int): TSegmentNums =
   result.row = i div 9
   result.col = i mod 9
   result.blck = (result.row div 3) + 3*(result.col div 3)
 
-proc setInitialConstraints(sudoku: var TSudoku) =
-  var all: TPossibles
-  for i in 1..9:
-    incl(all, i)
-  for i in 0..8:
-    sudoku.blck[i] = all
-    sudoku.col[i] = all
-    sudoku.row[i] = all
+proc getAllIndices(): array[0..80, TSegmentNums] =
+  for i in 0..80:
+    result[i] = getIndices(i)
+
+# I love that Nim can do this
+# In theory these are looked up exponentially more than the number of Sudoku spaces
+# but heurists and forced moves mean that the difference is less than a factor of 10
+# Still, that's speed savings especially if there's function call overhead with just
+# using getIndices direction division can be slow, and we don't have enough data here
+# that I'm worried about anything getting pushed out of L1$
+const segmentIndices = getAllIndices()
+
 
 proc `$`(sudoku: TSudoku): string =
   var str = ""
@@ -45,15 +49,25 @@ proc `$`(sudoku: TSudoku): string =
       str &= "\n"
   return str
 
+
+proc setInitialConstraints(sudoku: var TSudoku) =
+  var all: TPossibles
+  for i in 1..9:
+    incl(all, i)
+  for i in 0..8:
+    sudoku.blck[i] = all
+    sudoku.col[i] = all
+    sudoku.row[i] = all
+
 proc setLoc(sudoku: var TSudoku, index, value: int) =
-  let s = getSegmentIndices(index)
+  let s = segmentIndices[index]
   sudoku.grid[index] = value
   excl(sudoku.blck[s.blck], value)
   excl(sudoku.col[s.col], value)
   excl(sudoku.row[s.row], value)
 
 proc clrLoc(sudoku: var TSudoku, index, value: int) =
-  let s = getSegmentIndices(index)
+  let s = segmentIndices[index]
   when debug:
     if sudoku.grid[index] != value:
       raise newException(EInvalidValue, $index & " cannot be cleared of value " & $value)
@@ -69,13 +83,11 @@ proc loadSudoku(fileName: string): TSudoku =
     var index = 0
     while true:
       let c = readChar(file)
-      try:
-        let n = parseInt($c) # There must be a better way than "parseInt($c)"
+      let n = int(c) - int('0')
+      if n >= 0 and n <= 10:
         if n != 0:
           result.setLoc(index, n)
         index += 1
-      except EInvalidValue:
-        continue
       if index == 81:
         break
   except EInvalidValue:
@@ -85,10 +97,17 @@ proc loadSudoku(fileName: string): TSudoku =
   finally:
     close(file)
 
+# I'm not sure that this template actually buys me any real clarity over
+# just substituting the code manually since it's only used twice and people
+# looking this this will probably be surprised by the fact that it causes
+# returns.  But I'm really writing this to learn Nimrod so might as well put
+# it in.  I guess I do prefer Rust's requiring macros to have a '!' to warn
+# readers in cases like this.
 template backout(sudoku: TSudoku, toRemove: seq[tuple[i, n: int]]): stmt =
   for b in toRemove:
     sudoku.clrLoc(b.i, b.n)
   return false
+
 
 proc solve(sudoku: var TSudoku): bool =
   var
@@ -100,7 +119,7 @@ proc solve(sudoku: var TSudoku): bool =
     for i in 0..80:
       if sudoku.grid[i] != 0:
         continue
-      let s = getSegmentIndices(i)
+      let s = segmentIndices[i]
       let possibles = sudoku.blck[s.blck] * sudoku.col[s.col] * sudoku.row[s.row]
       let num = card(possibles)
       if num < lowNum:

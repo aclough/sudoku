@@ -12,20 +12,21 @@ typedef struct {
 
 static inline short field_to_short(short);
 static inline short short_to_field(short);
-static int check_sudoku(sudoku *, sudoku *);
-static int how_many_remaining(sudoku *);
+static int check_sudoku(const sudoku *, const sudoku *);
+static int how_many_remaining(const sudoku *);
 static int solve_block(block *);
 static inline int is_popcount_one(short);
 static inline int popcount(short);
+static inline int get_most_constrained_space(const sudoku *);
 static void print_field(short x);
-static void copy_sudoku(sudoku *, sudoku *);
+static void copy_sudoku(sudoku * destination, const sudoku * source);
 
 
 // Takes in a sudoku puzzle and optionally it's solution and
 // returns the puzzle, solved.
 // If the solution is provided, it compares it's work to the solution
 // every round of solving and aborts if a discrepency emerges.
-int solve_sudoku(sudoku* puzzle, sudoku* expected){
+int solve_sudoku(sudoku * const puzzle, sudoku * const expected){
     int x,y;
     int a,b;
     int remaining, last_remaining;
@@ -86,7 +87,7 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
 }
 
 
-int solve_block(block* myblock){
+int solve_block(block * const myblock){
     int x;
     short value_screen=0, once_screen=0, multi_screen=0;
     element *myspace;
@@ -125,7 +126,7 @@ int solve_block(block* myblock){
     return 0;
 }
 
-int get_most_constrained_space(sudoku *puzzle){
+int get_most_constrained_space(const sudoku * const puzzle){
     int i, min_space, value;
     int min_value = 10;
     for(i = 0; i < (9*9); i++){
@@ -138,7 +139,7 @@ int get_most_constrained_space(sudoku *puzzle){
     return min_space;
 }
 
-int how_many_remaining(sudoku *puzzle){
+int how_many_remaining(const sudoku * const puzzle){
     int x,y;
     int remaining = 9*9;
     for( x = 0; x < 9; x++){
@@ -151,7 +152,7 @@ int how_many_remaining(sudoku *puzzle){
     return remaining;
 }
 
-int check_sudoku(sudoku *puzzle, sudoku *expected){
+int check_sudoku(const sudoku * const puzzle, const sudoku * const expected){
     int x, y;
     short value;
     if(NULL == expected){
@@ -176,7 +177,7 @@ int check_sudoku(sudoku *puzzle, sudoku *expected){
 }
 
 
-void print_sudoku(sudoku *puzzle){
+void print_sudoku(const sudoku * const puzzle){
     int x,y;
     for( x = 0; x < 9; x++){
         if(0 == x%3 && 0 != x) printf("\n");
@@ -189,7 +190,7 @@ void print_sudoku(sudoku *puzzle){
 }
 
 
-int load_sudoku(sudoku *puzzle, char *filename){
+int load_sudoku(sudoku * const puzzle, const char * const filename){
     FILE *fp;
     short value;
     int x,y;
@@ -214,7 +215,7 @@ int load_sudoku(sudoku *puzzle, char *filename){
     return 0;
 }
 
-void copy_sudoku( sudoku *destination, sudoku *source){
+void copy_sudoku(sudoku * const destination, const sudoku * const source){
     int x,y;
     for( x = 0; x < 9; x++){
         for( y = 0; y < 9; y++){

@@ -23,7 +23,7 @@ static void copy_sudoku(sudoku *, sudoku *);
 
 // Takes in a sudoku puzzle and optionally it's solution and
 // returns the puzzle, solved.
-// If the solution is provided, it compares it's work to the solution 
+// If the solution is provided, it compares it's work to the solution
 // every round of solving and aborts if a discrepency emerges.
 int solve_sudoku(sudoku* puzzle, sudoku* expected){
     int x,y;
@@ -77,7 +77,7 @@ int solve_sudoku(sudoku* puzzle, sudoku* expected){
                     copy_sudoku( puzzle, &saved_puzzle);
                 }
             }
-            // No guess worked out, so hopefully there was a 
+            // No guess worked out, so hopefully there was a
             // wrong guess earlier
             return -1;
         }
@@ -218,8 +218,8 @@ void copy_sudoku( sudoku *destination, sudoku *source){
     int x,y;
     for( x = 0; x < 9; x++){
         for( y = 0; y < 9; y++){
-            destination->space[x][y].possibles = source->space[x][y].possibles; 
-            destination->space[x][y].value = source->space[x][y].value; 
+            destination->space[x][y].possibles = source->space[x][y].possibles;
+            destination->space[x][y].value = source->space[x][y].value;
         }
     }
 }
@@ -227,7 +227,7 @@ void copy_sudoku( sudoku *destination, sudoku *source){
 // Not too efficient, but not being used in time-critical places
 short field_to_short(short input){
     short index = 1;
-    if( !is_popcount_one(input)){ 
+    if( !is_popcount_one(input)){
         return 0;
     }
     while(input > 0){

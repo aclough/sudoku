@@ -252,15 +252,11 @@ short short_to_field(short x){
 }
 
 int is_popcount_one(short x){
-    if( !x) return 0; // popcount == 0
-    if(x & (x-1)) return 0; // popcount > 1
-    return 1;  // popcount = 1
+    return popcount(x) == 1;
 }
 
 int popcount(short x){
-    int c = 0;
-    for ( ; x > 0; x &= x -1) c++;
-    return c;
+    return __builtin_popcount(x);
 }
 
 // To be used for debugging

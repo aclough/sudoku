@@ -2,7 +2,7 @@ import strutils, os
 
 const debug = true
 
-# This is a quick problem to solve a sudoku
+# This is a quick program to solve a sudoku
 # Sudokus are represented as an array of 81 values, set to 1 to 9 if
 # they've been given a value and set to 0 if they're still blank.
 #
@@ -15,7 +15,7 @@ const debug = true
 # guess is stored on the stack.
 
 type
-  TSegmentNums = tuple[blck,col,row:int]
+  TSegmentNums = tuple[blck,col,row: int]
   TPossibles = set[1..9] # Values remaining for placement in a segment
   TSudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, TPossibles]]
 
@@ -60,21 +60,21 @@ proc setInitialConstraints(sudoku: var TSudoku) =
     sudoku.row[i] = all
 
 proc setLoc(sudoku: var TSudoku, index, value: int) =
-  let s = segmentIndices[index]
+  let (blck, col, row) = segmentIndices[index]
   sudoku.grid[index] = value
-  excl(sudoku.blck[s.blck], value)
-  excl(sudoku.col[s.col], value)
-  excl(sudoku.row[s.row], value)
+  excl(sudoku.blck[blck], value)
+  excl(sudoku.col[col], value)
+  excl(sudoku.row[row], value)
 
 proc clrLoc(sudoku: var TSudoku, index, value: int) =
-  let s = segmentIndices[index]
+  let (blck, col, row) = segmentIndices[index]
   when debug:
     if sudoku.grid[index] != value:
       raise newException(EInvalidValue, $index & " cannot be cleared of value " & $value)
   sudoku.grid[index] = 0
-  incl(sudoku.blck[s.blck], value)
-  incl(sudoku.col[s.col], value)
-  incl(sudoku.row[s.row], value)
+  incl(sudoku.blck[blck], value)
+  incl(sudoku.col[col], value)
+  incl(sudoku.row[row], value)
 
 proc loadSudoku(fileName: string): TSudoku =
   result.setInitialConstraints()
@@ -115,17 +115,17 @@ proc solve(sudoku: var TSudoku): bool =
     possibilities: TPossibles
     eagerMoves: seq[tuple[i,n:int]] = @[]
   block getMostConstrained:
-    var lowNum = 100
+    var lowCount = 100
     for i in 0..80:
       if sudoku.grid[i] != 0:
         continue
-      let s = segmentIndices[i]
-      let possibles = sudoku.blck[s.blck] * sudoku.col[s.col] * sudoku.row[s.row]
-      let num = card(possibles)
-      if num < lowNum:
-        if num == 0:
+      let (blck, col, row) = segmentIndices[i]
+      let possibles = sudoku.blck[blck] * sudoku.col[col] * sudoku.row[row]
+      let count = card(possibles)
+      if count < lowCount:
+        if count == 0:
           sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
-        elif num == 1:
+        elif count == 1:
           # There's a single valid move for this spot so we'll set it eagerly now rather
           # than waiting and trying it.
           for n in possibles:
@@ -135,8 +135,8 @@ proc solve(sudoku: var TSudoku): bool =
         else:
           mostConstrained = i
           possibilities = possibles
-          lowNum = num
-    if lowNum == 100: # We never found a blank square
+          lowCount = count
+    if lowCount == 100: # We never found a blank square
       return true
   for n in possibilities:
     sudoku.setLoc(mostConstrained, n)

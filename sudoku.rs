@@ -5,15 +5,12 @@
 
 struct Sudoku {
     vals: [u8; 81],
-    blck_frees: [u8; 9],
-    col_frees: [u8; 9],
-    row_frees: [u8; 9],
 }
 
 impl Sudoku {
     fn print(&self) {
         let mut s = "".to_string();
-        for (i, v) in self.vals.into_iter().enumerate() {
+        for (i, v) in self.into_iter().enumerate() {
             if i == 0 {
                 ;
             } else if i % 27 == 0 {
@@ -31,6 +28,15 @@ impl Sudoku {
     }
 }
 
+impl<'a> IntoIterator for &'a Sudoku {
+   type Item = &'a u8;
+   type IntoIter = std::slice::Iter<'a, u8>;
+
+   fn into_iter(self) -> Self::IntoIter {
+       self.vals.into_iter()
+   }
+}
+
 fn main() {
     let s = Sudoku {
         vals: [1,2,3,4,5,6,7,8,9,
@@ -42,9 +48,6 @@ fn main() {
                7,2,3,4,5,6,7,8,9,
                8,2,3,4,5,6,7,8,9,
                9,2,3,4,5,6,7,8,9],
-        blck_frees: [0,0,0,0,0,0,0,0,0],
-        col_frees: [0,0,0,0,0,0,0,0,0],
-        row_frees: [0,0,0,0,0,0,0,0,0],
     };
     s.print();
 }

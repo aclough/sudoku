@@ -18,16 +18,20 @@ class Puzzle:
     def __iter__(self):
         return iter(self.spaces)
 
-    def getFree(self, loc):
+    def getFreeSets(self, loc):
         rowFree = self.rowFree[loc // 9]
         colFree = self.colFree[loc % 9]
         blkFree = self.blkFree[(loc // 27) + (((loc % 9) // 3) * 3)]
         return rowFree, colFree, blkFree
 
+    def getFree(self, loc):
+        row, col, blk = self.getFreeSets(loc)
+        return row & col & blk
+
     def set(self, loc, val):
         if not val in self._allowed:
             raise ValueError("{} not valid space value".format(val))
-        rowFree, colFree, blkFree = self.getFree(loc)
+        rowFree, colFree, blkFree = self.getFreeSets(loc)
         if val in rowFree and val in colFree and val in blkFree:
             self.spaces[loc] = val
             rowFree.remove(val)
@@ -39,11 +43,19 @@ class Puzzle:
     def unset(self, loc, val):
         if not val in self._allowed:
             raise ValueError("{} not valid space value".format(val))
-        rowFree, colFree, blkFree = self.getFree(loc)
+        rowFree, colFree, blkFree = self.getFreeSets(loc)
         self.spaces[loc] = 0
         rowFree.add(val)
         colFree.add(val)
         blkFree.add(val)
+
+    def trySolveWith(self, loc, toTry):
+        self.set(loc, toTry)
+        try:
+            self.solve()
+        except (ValueError, IndexError):
+            self.unset(loc, toTry)
+            raise
 
     def load(self, filename):
         """Load a file as the puzzle."""
@@ -67,13 +79,46 @@ class Puzzle:
                 print("   ", end="")
             else:
                 print(" ", end="")
-            print(str(v) + " ", end="")
+            print(str(v), end="")
+        print("")
+
+    def solve(self):
+        leastFree = len(self._allowed) + 1
+        bestMove = None
+        for i, v in enumerate(self):
+            frees = self.getFree(i)
+            freeSize = len(frees)
+            if v != 0:
+                continue
+            if freeSize == 0:
+                raise ValueError("Sudoku unsolvable")
+            elif freeSize == 1:
+                bestMove = None
+                self.trySolveWith(i, frees.pop())
+                break;
+            elif freeSize < leastFree:
+                leastFree = freeSize
+                bestMove = i
+        self.print()
+        if bestMove:
+            frees = self.getFree(bestMove)
+            for v in frees:
+                try:
+                    self.trySolveWith(bestMove, v)
+                    break
+                except (ValueError, IndexError):
+                    pass
+            else:
+                raise ValueError("No solutions on this branch")
 
 
 if __name__=='__main__':
     puzzle = Puzzle()
     puzzle.load(sys.argv[1])
     puzzle.print()
-    #puzzle.solve()
+    try:
+        puzzle.solve()
+    except (ValueError, IndexError):
+        print("\n\nFailed to solve, here's the current state")
     print("\n\n\n")
     puzzle.print()

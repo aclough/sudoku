@@ -67,20 +67,22 @@ class Puzzle:
                 if (v != "0"):
                     self.set(i, int(v))
 
-    def print(self):
+    def __str__(self):
+        slist = []
         for i, v in enumerate(self):
             if i == 0:
                 pass
             elif i % 27 == 0:
-                print("\n\n", end="")
+                slist.append("\n\n")
             elif i % 9 == 0:
-                print("\n", end="")
+                slist.append("\n")
             elif i % 3 == 0:
-                print("   ", end="")
+                slist.append("   ")
             else:
-                print(" ", end="")
-            print(str(v), end="")
-        print("")
+                slist.append(" ")
+            slist.append(str(v))
+        return "".join(slist)
+
 
     def solve(self):
         leastFree = len(self._allowed) + 1
@@ -99,7 +101,7 @@ class Puzzle:
             elif freeSize < leastFree:
                 leastFree = freeSize
                 bestMove = i
-        self.print()
+        print(self)
         if bestMove:
             frees = self.getFree(bestMove)
             for v in frees:
@@ -115,10 +117,10 @@ class Puzzle:
 if __name__=='__main__':
     puzzle = Puzzle()
     puzzle.load(sys.argv[1])
-    puzzle.print()
+    print(puzzle)
     try:
         puzzle.solve()
     except (ValueError, IndexError):
         print("\n\nFailed to solve, here's the current state")
     print("\n\n\n")
-    puzzle.print()
+    print(puzzle)

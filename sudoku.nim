@@ -70,7 +70,7 @@ proc clrLoc(sudoku: var TSudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
   when debug:
     if sudoku.grid[index] != value:
-      raise newException(EInvalidValue, $index & " cannot be cleared of value " & $value)
+      raise newException(ValueError, $index & " cannot be cleared of value " & $value)
   sudoku.grid[index] = 0
   incl(sudoku.blck[blck], value)
   incl(sudoku.col[col], value)
@@ -90,9 +90,9 @@ proc loadSudoku(fileName: string): TSudoku =
         index += 1
       if index == 81:
         break
-  except EInvalidValue:
+  except ValueError:
     echo "Could not parse input file"
-  except EIO:
+  except IOError:
     echo "IO error"
   finally:
     close(file)
@@ -149,7 +149,7 @@ var
   m_sudoku: TSudoku
 try:
   m_sudoku = loadSudoku(commandLineParams()[0])
-except EInvalidIndex:
+except ValueError:
   m_sudoku = loadSudoku("puzzle.txt")
 echo m_sudoku
 

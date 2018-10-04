@@ -103,7 +103,7 @@ proc loadSudoku(fileName: string): TSudoku =
 # returns.  But I'm really writing this to learn Nimrod so might as well put
 # it in.  I guess I do prefer Rust's requiring macros to have a '!' to warn
 # readers in cases like this.
-template backout(sudoku: TSudoku, toRemove: seq[tuple[i, n: int]]): stmt =
+template backout(sudoku: TSudoku, toRemove: seq[tuple[i, n: int]]) =
   for b in toRemove:
     sudoku.clrLoc(b.i, b.n)
   return false

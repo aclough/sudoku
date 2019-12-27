@@ -20,9 +20,7 @@ int load_sudoku( sudoku*, const char*);
 
 // Takes the first sudoku structure passed in and iterates solving it.  It
 // returns 0 if a solution is found, and -1 if it can no longer make progress.
-// The second argument is a check against which the solution is measured.  If
-// the forming solution deviates from the check the function also returns -1
-int solve_sudoku( sudoku*, sudoku*);
+int solve_sudoku( sudoku*);
 
 
 // Takes a sudoku and prints it to the screen

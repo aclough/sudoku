@@ -9,14 +9,9 @@ sudokuer = c.cdll.LoadLibrary(_path)
 class Sudoku(c.Structure):
     _fields_ = [('elements', c.c_int * 81)]
 s = Sudoku()
-e = Sudoku()
 
 sudokuer.load_sudoku(c.byref(s), c.c_char_p(sys.argv[1]))
 
-sudokuer.print_sudoku(c.byref(s))
-
-sudokuer.load_sudoku(c.byref(e), c.c_char_p(sys.argv[2]))
-
-print sudokuer.solve_sudoku(c.byref(s), c.byref(e))
+print sudokuer.solve_sudoku(c.byref(s))
 
 sudokuer.print_sudoku(c.byref(s))

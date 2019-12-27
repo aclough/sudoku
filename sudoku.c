@@ -12,13 +12,11 @@ typedef struct {
 
 static inline short field_to_short(short);
 static inline short short_to_field(short);
-static int check_sudoku(const sudoku *, const sudoku *);
 static int how_many_remaining(const sudoku *);
 static int solve_block(block *);
 static inline int is_popcount_one(short);
 static inline int popcount(short);
 static inline int get_most_constrained_space(const sudoku *);
-static void print_field(short x);
 static void copy_sudoku(sudoku * destination, const sudoku * source);
 
 
@@ -26,12 +24,11 @@ static void copy_sudoku(sudoku * destination, const sudoku * source);
 // returns the puzzle, solved.
 // If the solution is provided, it compares it's work to the solution
 // every round of solving and aborts if a discrepency emerges.
-int solve_sudoku(sudoku * const puzzle, sudoku * const expected){
+int solve_sudoku(sudoku * const puzzle){
     int x,y;
     int a,b;
     int remaining, last_remaining;
     int count=0;
-    short saved_field;
     sudoku saved_puzzle;
     block rows[9], colums[9], squares[9];
     for( x = 0; x < 9; x++){
@@ -57,10 +54,6 @@ int solve_sudoku(sudoku * const puzzle, sudoku * const expected){
                 return -1;
         }
 
-        if(check_sudoku(puzzle, expected)){
-            return -1;
-        }
-
         last_remaining = remaining;
         remaining = how_many_remaining(puzzle);
         // If elimination isn't making progress, guess and check
@@ -72,7 +65,7 @@ int solve_sudoku(sudoku * const puzzle, sudoku * const expected){
                     puzzle->space[a/9][a%9].value = short_to_field(x);
                     copy_sudoku( &saved_puzzle, puzzle);
 
-                    if( solve_sudoku( puzzle, expected) == 0){
+                    if( solve_sudoku(puzzle) == 0){
                         return 0;
                     }
                     copy_sudoku( puzzle, &saved_puzzle);
@@ -151,31 +144,6 @@ int how_many_remaining(const sudoku * const puzzle){
     }
     return remaining;
 }
-
-int check_sudoku(const sudoku * const puzzle, const sudoku * const expected){
-    int x, y;
-    short value;
-    if(NULL == expected){
-        return 0;
-    }
-    for( x = 0; x < 9; x++){
-        for( y = 0; y < 9; y++){
-            value = puzzle->space[x][y].value;
-            if(value){
-                if(expected->space[x][y].value != value){
-                    printf("Mismatch at %d,%d\n\n", x, y);
-                    printf("Observed:\n");
-                    print_sudoku(puzzle);
-                    printf("\nExpected:\n");
-                    print_sudoku(expected);
-                    return -1;
-                }
-            }
-        }
-    }
-    return 0;
-}
-
 
 void print_sudoku(const sudoku * const puzzle){
     int x,y;
@@ -257,21 +225,4 @@ int is_popcount_one(short x){
 
 int popcount(short x){
     return __builtin_popcount(x);
-}
-
-// To be used for debugging
-void print_field(short x){
-    int i;
-    for(i = 1; i < 10; i++){
-        printf("%d",i);
-    }
-    printf("\n");
-    for(i = 1; i < 10; i++){
-        if(x & short_to_field(i)){
-            printf("1");
-        } else {
-            printf("0");
-        }
-    }
-    printf("\n");
 }

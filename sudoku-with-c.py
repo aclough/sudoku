@@ -10,8 +10,8 @@ class Sudoku(c.Structure):
     _fields_ = [('elements', c.c_int * 81)]
 s = Sudoku()
 
-sudokuer.load_sudoku(c.byref(s), c.c_char_p(sys.argv[1]))
+sudokuer.load_sudoku(c.byref(s), c.c_char_p(sys.argv[1].encode()))
 
-print sudokuer.solve_sudoku(c.byref(s))
+print(sudokuer.solve_sudoku(c.byref(s)))
 
 sudokuer.print_sudoku(c.byref(s))

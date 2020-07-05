@@ -30,7 +30,7 @@ proc getAllIndices(): array[0..80, TSegmentNums] =
 
 # I love that Nim can do this
 # In theory these are looked up exponentially more than the number of Sudoku spaces
-# but heurists and forced moves mean that the difference is less than a factor of 10
+# but heuristics and forced moves mean that the difference is less than a factor of 10
 # Still, that's speed savings especially if there's function call overhead with just
 # using getIndices direction division can be slow, and we don't have enough data here
 # that I'm worried about anything getting pushed out of L1$

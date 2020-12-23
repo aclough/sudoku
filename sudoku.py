@@ -68,7 +68,7 @@ class Puzzle:
                     self.set(i, int(v))
 
     def __str__(self):
-        slist = []
+        slist = ['\n']*3
         for i, v in enumerate(self):
             if i == 0:
                 pass
@@ -122,5 +122,4 @@ if __name__=='__main__':
         puzzle.solve()
     except (ValueError, IndexError):
         print("\n\nFailed to solve, here's the current state")
-    print("\n\n\n")
     print(puzzle)

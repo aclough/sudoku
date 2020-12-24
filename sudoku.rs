@@ -3,6 +3,7 @@
 // I'll be trying to add threading later
 
 use std::fs;
+use std::env;
 
 struct Sudoku {
     vals: [u8; 81],
@@ -28,7 +29,7 @@ impl Sudoku {
     }
 }
 
-fn load_sudoku(filename: &str) -> Sudoku {
+fn load_sudoku(filename: String) -> Sudoku {
     let contents = fs::read_to_string(filename)
         .expect("Something went wrong reading the file");
     let mut numbers: [u8; 81] = [0; 81];
@@ -48,6 +49,14 @@ impl<'a> IntoIterator for &'a Sudoku {
 }
 
 fn main() {
-    let s = load_sudoku("puzzle.txt");
+    let args: Vec<String> = env::args().collect();
+
+    let file = if args.len() > 1 {
+        args[1].clone()
+    } else {
+        "puzzle.txt".to_string()
+    };
+
+    let s = load_sudoku(file);
     s.print();
 }

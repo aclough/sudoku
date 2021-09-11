@@ -2,10 +2,10 @@
 
 echo ""
 echo "Compiling C"
-clang -O2 tester.c sudoku.c
+gcc -O2 tester.c sudoku.c
 echo ""
 echo "Compiling C shared library"
-clang -O2 -shared -o sudoku.so -fPIC sudoku.c
+gcc -O2 -shared -o sudoku.so -fPIC sudoku.c
 echo ""
 echo "Compiling Nim"
 nim c -d:release --verbosity:0 sudoku.nim

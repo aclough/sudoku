@@ -23,7 +23,7 @@ static void copy_sudoku(sudoku * destination, const sudoku * source);
 // Takes in a sudoku puzzle and optionally it's solution and
 // returns the puzzle, solved.
 // If the solution is provided, it compares it's work to the solution
-// every round of solving and aborts if a discrepency emerges.
+// every round of solving and aborts if a discrepancy emerges.
 int solve_sudoku(sudoku * const puzzle){
     int x,y;
     int a,b;

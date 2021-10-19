@@ -3,20 +3,29 @@
 echo ""
 echo "Compiling C"
 gcc -O2 tester.c sudoku.c
+mv a.out sudoku_c
 echo ""
 echo "Compiling C shared library"
 gcc -O2 -shared -o sudoku.so -fPIC sudoku.c
 echo ""
 echo "Compiling Nim"
 nim c -d:release --verbosity:0 sudoku.nim
+mv sudoku sudoku_nim
+echo ""
+echo "Compiling Rust"
+rustc -O sudoku.rs -o sudoku_rust
 
 echo ""
 echo "C speed 1000 times"
-time for i in {1..1000}; do ./a.out hard-sudoku.txt > /dev/null; done
+time for i in {1..1000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
 
 echo ""
 echo "Nim speed 1000 times"
-time for i in {1..1000}; do ./sudoku hard-sudoku.txt > /dev/null; done
+time for i in {1..1000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
+
+echo ""
+echo "Rust speed 1000 times"
+time for i in {1..1000}; do ./sudoku_rust hard-sudoku.txt > /dev/null; done
 
 echo ""
 echo "Python speed 1000 times"

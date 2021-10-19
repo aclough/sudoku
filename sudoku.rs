@@ -7,16 +7,26 @@ use std::fs;
 use std::vec;
 
 // TODO
-//   Make fields and vals their own types
 //   Remaining list to cut down on iteration?
 //   Threading?
 //   Some structure for iterating repitition, passing in a closure or using a macro?
 
+// The field type is a bitfield where each of the bits represents the possibility that the
+// corresponding digit could be found there.  For instance, if the bitfield is 0x03 then either a 1
+// or a 2 could be there.
+type Field = u16;
+
 struct Sudoku {
-    vals: [u16; 81],
-    blocks: [u16; 9],
-    cols: [u16; 9],
-    rows: [u16; 9],
+    // The final derived value, this will either be 0 if still unknown or a bitfield with a single
+    // bit set if the solution has been found.  Left as a field to better interface with the other
+    // arrays.  Left as a Field because it makes set_value and clear_value slightly faster without
+    // the Field/value conversion and we call those much more frequently than we do the print
+    // function which wants these as actual values.
+    results: [Field; 81],
+    // These are the remaining possibilities for the corresponding block, column, or row.
+    blocks: [Field; 9],
+    cols: [Field; 9],
+    rows: [Field; 9],
 }
 
 impl Sudoku {
@@ -38,9 +48,9 @@ impl Sudoku {
         println!("{}\n\n", s);
     }
     
-    fn set_value(&mut self, val: u16, location: usize) {
-        assert!(self.vals[location] == 0);
-        self.vals[location] = val;
+    fn set_value(&mut self, val: Field, location: usize) {
+        assert!(self.results[location] == 0);
+        self.results[location] = val;
 
         let (blk, col, row) = get_indices(location);
         self.blocks[blk] = self.blocks[blk] & !val;
@@ -49,9 +59,9 @@ impl Sudoku {
     }
 
     fn clear_value(&mut self, location: usize) {
-        assert!(self.vals[location] != 0);
-        let val = self.vals[location];
-        self.vals[location] = 0;
+        assert!(self.results[location] != 0);
+        let val = self.results[location];
+        self.results[location] = 0;
 
         let (blk, col, row) = get_indices(location);
         self.blocks[blk] = self.blocks[blk] | val;
@@ -74,7 +84,7 @@ impl Sudoku {
         loop {
             let mut solved_count = 0;
             for i in 0..81 {
-                if self.vals[i] != 0 {
+                if self.results[i] != 0 {
                     // solved
                     continue;
                 }
@@ -105,7 +115,7 @@ impl Sudoku {
             let (b, c, r) = get_indices(i);
             let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
             let count: u32 = possibles.count_ones();
-            if self.vals[i] != 0 {
+            if self.results[i] != 0 {
                 // solved
                 continue;
             }
@@ -141,11 +151,11 @@ impl Sudoku {
     }
 }
 
-fn val_to_field(x: u8) -> u16  {
+fn val_to_field(x: u8) -> Field  {
     return 1 << (x-1);
 }
 
-fn field_to_val(x: u16) -> u8 {
+fn field_to_val(x: Field) -> u8 {
     if x == 0 {
         return 0;
     }
@@ -166,7 +176,7 @@ fn field_to_val(x: u16) -> u8 {
     return 0;
 }
 
-fn field_to_vals(x: u16) -> Vec<u8> {
+fn field_to_vals(x: Field) -> Vec<u8> {
     let mut ret: Vec<u8> = vec![];
     if x == 0 {
         return ret;
@@ -194,8 +204,8 @@ fn get_indices(i: usize) -> (usize, usize, usize) {
 
 fn load_sudoku(filename: String) -> Sudoku {
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
-    let start_possibilties:u16 = 0x1FF;
-    let mut s = Sudoku { vals: [0; 81], 
+    let start_possibilties:Field = 0x1FF;
+    let mut s = Sudoku { results: [0; 81], 
                          blocks: [start_possibilties; 9],
                          cols: [start_possibilties; 9],
                          rows: [start_possibilties; 9]};
@@ -214,11 +224,11 @@ fn load_sudoku(filename: String) -> Sudoku {
 }
 
 impl<'a> IntoIterator for &'a Sudoku {
-   type Item = &'a u16;
-   type IntoIter = std::slice::Iter<'a, u16>;
+   type Item = &'a Field;
+   type IntoIter = std::slice::Iter<'a, Field>;
 
    fn into_iter(self) -> Self::IntoIter {
-       self.vals.iter()
+       self.results.iter()
    }
 }
 

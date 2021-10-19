@@ -21,10 +21,10 @@ time for i in {1..1000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
 
 echo ""
 echo "Nim speed 1000 times"
-time for i in {1..1000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
+time for i in {1..100000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
 
 echo ""
-echo "Rust speed 1000 times"
+echo "Rust speed 10000 times"
 time for i in {1..1000}; do ./sudoku_rust hard-sudoku.txt > /dev/null; done
 
 echo ""

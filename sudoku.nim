@@ -114,30 +114,37 @@ proc solve(sudoku: var TSudoku): bool =
     mostConstrained: int
     possibilities: TPossibles
     eagerMoves: seq[tuple[i,n:int]] = @[]
+    lowCount: int
   block getMostConstrained:
-    var lowCount = 100
-    for i in 0..80:
-      if sudoku.grid[i] != 0:
-        continue
-      let (blck, col, row) = segmentIndices[i]
-      let possibles = sudoku.blck[blck] * sudoku.col[col] * sudoku.row[row]
-      let count = card(possibles)
-      if count < lowCount:
-        if count == 0:
-          sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
-        elif count == 1:
-          # There's a single valid move for this spot so we'll set it eagerly now rather
-          # than waiting and trying it.
-          for n in possibles:
-            sudoku.setLoc(i,n)
-            eagerMoves.add((i,n))
+    var solved: int
+    while true:
+      lowCount = 100
+      for i in 0..80:
+        solved = 0
+        if sudoku.grid[i] != 0:
           continue
-        else:
-          mostConstrained = i
-          possibilities = possibles
-          lowCount = count
-    if lowCount == 100: # We never found a blank square
-      return true
+        let (blck, col, row) = segmentIndices[i]
+        let possibles = sudoku.blck[blck] * sudoku.col[col] * sudoku.row[row]
+        let count = card(possibles)
+        if count < lowCount:
+          if count == 0:
+            sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
+          elif count == 1:
+            # There's a single valid move for this spot so we'll set it eagerly now rather
+            # than waiting and trying it.
+            for n in possibles:
+              sudoku.setLoc(i,n)
+              eagerMoves.add((i,n))
+            solved += 1
+            continue
+          else:
+            mostConstrained = i
+            possibilities = possibles
+            lowCount = count
+      if solved == 0:
+        break getMostConstrained
+  if lowCount == 100: # We never found a blank square
+    return true
   for n in possibilities:
     sudoku.setLoc(mostConstrained, n)
     if sudoku.solve():

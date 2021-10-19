@@ -4,12 +4,13 @@
 use std::assert;
 use std::env;
 use std::fs;
+use std::vec;
 
 // TODO
 //   Make fields and vals their own types
-//   Guess and check
 //   Remaining list to cut down on iteration?
 //   Threading?
+//   Some structure for iterating repitition, passing in a closure or using a macro?
 
 struct Sudoku {
     vals: [u16; 81],
@@ -40,41 +41,103 @@ impl Sudoku {
     fn set_value(&mut self, val: u16, location: usize) {
         assert!(self.vals[location] == 0);
         self.vals[location] = val;
+
         let (blk, col, row) = get_indices(location);
-        assert!(self.blocks[blk] & val != 0);
-        self.blocks[blk] = self.blocks[blk] ^ val;
-        assert!(self.cols[col] & val != 0);
-        self.cols[col] = self.cols[col] ^ val;
-        assert!(self.rows[row] & val != 0);
-        self.rows[row] = self.rows[row] ^ val;
+        self.blocks[blk] = self.blocks[blk] & !val;
+        self.cols[col] = self.cols[col] & !val;
+        self.rows[row] = self.rows[row] & !val;
     }
 
     fn clear_value(&mut self, location: usize) {
         assert!(self.vals[location] != 0);
         let val = self.vals[location];
+        self.vals[location] = 0;
+
         let (blk, col, row) = get_indices(location);
-        assert!(self.blocks[blk] & val == 0);
         self.blocks[blk] = self.blocks[blk] | val;
-        assert!(self.cols[col] & (1 << val) == 0);
         self.cols[col] = self.cols[col] | val;
-        assert!(self.rows[row] & val == 0);
         self.rows[row] = self.rows[row] | val;
     }
 
-    fn solve(&mut self) {
-        for i in 0..81 {
-            if self.vals[i] != 0 {
-                continue;
+    fn back_out_moves(&mut self, eager_moves: Vec<usize>) {
+        for guess in eager_moves {
+            self.clear_value(guess);
+        }
+    }
+
+    fn solve(&mut self) -> bool {
+
+        // Stage once, do as many forced moves as possible
+        // Keep trying until they stop coming
+        let mut eager_moves: Vec<usize> = vec![];
+
+        loop {
+            let mut solved_count = 0;
+            for i in 0..81 {
+                if self.vals[i] != 0 {
+                    // solved
+                    continue;
+                }
+                let (b, c, r) = get_indices(i);
+                let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
+                let count: u32 = possibles.count_ones();
+
+                if count == 1 {
+                    self.set_value(possibles, i);
+                    solved_count += 1;
+                    eager_moves.push(i);
+                } else if count == 0 {
+                    // We're down a blind ally, abort
+                    self.back_out_moves(eager_moves);
+                    return false;
+                }
             }
-            let (b, c, r) = get_indices(i);
-            let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
-            assert!(possibles.count_ones() != 0);
-            if possibles.count_ones() == 1 {
-                self.set_value(possibles, i);
-                self.solve();
-                return;
+            if solved_count == 0 {
+                // We aren't solving any more, so go on to guess and check
+                break;
             }
         }
+        
+        // Now go through again with up to date info and find the best place to guess
+        let mut lowest_space: usize = 0;
+        let mut lowest_count: u32 = 10;
+        for i in 0..81 {
+            let (b, c, r) = get_indices(i);
+            let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
+            let count: u32 = possibles.count_ones();
+            if self.vals[i] != 0 {
+                // solved
+                continue;
+            }
+            if count < lowest_count {
+                lowest_count = count;
+                lowest_space = i;
+            }
+            if count == 2 {
+                // We won't do better than this.
+                break;
+            }
+        }
+        if lowest_count == 10 {
+            // We won!
+            return true;
+        }
+
+        let (b, c, r) = get_indices(lowest_space);
+        let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
+        let possibles = field_to_vals(possibles);
+        //println!("Checking {} with {} possibles, {:?}", lowest_space, possibles.len(), possibles);
+        //self.print();
+        assert!(possibles.len() == lowest_count as usize); // There's no way we can have more than 9 possibilities so using `as`
+        for guess in possibles {
+            self.set_value(val_to_field(guess), lowest_space);
+            if self.solve() {
+                return true;
+            }
+            self.clear_value(lowest_space);
+        }
+        self.back_out_moves(eager_moves);
+        return false;
     }
 }
 
@@ -101,6 +164,25 @@ fn field_to_val(x: u16) -> u8 {
     // Impossible to get here
     assert!(false);
     return 0;
+}
+
+fn field_to_vals(x: u16) -> Vec<u8> {
+    let mut ret: Vec<u8> = vec![];
+    if x == 0 {
+        return ret;
+    }
+
+    let mut x = x;
+    let mut val = 1u8;
+
+    while x > 0 {
+        if 1 == (x % 2) {
+            ret.push(val);
+        }
+        val += 1;
+        x >>= 1;
+    }
+    return ret;
 }
 
 fn get_indices(i: usize) -> (usize, usize, usize) {

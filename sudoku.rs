@@ -47,7 +47,7 @@ impl Sudoku {
         }
         println!("{}\n\n", s);
     }
-    
+
     fn set_value(&mut self, val: Field, location: usize) {
         assert!(self.results[location] == 0);
         self.results[location] = val;
@@ -83,6 +83,9 @@ impl Sudoku {
 
         loop {
             let mut solved_count = 0;
+            let mut lowest_space: usize = 0;
+            let mut lowest_count: u32 = std::u32::MAX;
+            let mut lowest_possibles: Field = 0;
             for i in 0..81 {
                 if self.results[i] != 0 {
                     // solved
@@ -100,54 +103,33 @@ impl Sudoku {
                     // We're down a blind ally, abort
                     self.back_out_moves(eager_moves);
                     return false;
+                } else if count < lowest_count {
+                    lowest_count = count;
+                    lowest_space = i;
+                    lowest_possibles = possibles;
                 }
             }
-            if solved_count == 0 {
-                // We aren't solving any more, so go on to guess and check
-                break;
-            }
-        }
-        
-        // Now go through again with up to date info and find the best place to guess
-        let mut lowest_space: usize = 0;
-        let mut lowest_count: u32 = 10;
-        for i in 0..81 {
-            let (b, c, r) = get_indices(i);
-            let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
-            let count: u32 = possibles.count_ones();
-            if self.results[i] != 0 {
-                // solved
+            if solved_count != 0 {
+                // If we're finding moves by elimination don't start guessing yet, just keep on
+                // solving this way
                 continue;
-            }
-            if count < lowest_count {
-                lowest_count = count;
-                lowest_space = i;
-            }
-            if count == 2 {
-                // We won't do better than this.
-                break;
-            }
-        }
-        if lowest_count == 10 {
-            // We won!
-            return true;
-        }
-
-        let (b, c, r) = get_indices(lowest_space);
-        let possibles = self.blocks[b] & self.cols[c] & self.rows[r];
-        let possibles = field_to_vals(possibles);
-        //println!("Checking {} with {} possibles, {:?}", lowest_space, possibles.len(), possibles);
-        //self.print();
-        assert!(possibles.len() == lowest_count as usize); // There's no way we can have more than 9 possibilities so using `as`
-        for guess in possibles {
-            self.set_value(val_to_field(guess), lowest_space);
-            if self.solve() {
+            } else if lowest_count == std::u32::MAX {
+                // We won!
                 return true;
             }
-            self.clear_value(lowest_space);
+            let possibles = field_to_vals(lowest_possibles);
+            for guess in possibles {
+                self.set_value(val_to_field(guess), lowest_space);
+                if self.solve() {
+                    return true;
+                }
+                self.clear_value(lowest_space);
+            }
+            self.back_out_moves(eager_moves);
+            // None of the guesses worked, we're on a bad branch.  Abort
+            return false;
+
         }
-        self.back_out_moves(eager_moves);
-        return false;
     }
 }
 
@@ -205,7 +187,7 @@ fn get_indices(i: usize) -> (usize, usize, usize) {
 fn load_sudoku(filename: String) -> Sudoku {
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
     let start_possibilties:Field = 0x1FF;
-    let mut s = Sudoku { results: [0; 81], 
+    let mut s = Sudoku { results: [0; 81],
                          blocks: [start_possibilties; 9],
                          cols: [start_possibilties; 9],
                          rows: [start_possibilties; 9]};

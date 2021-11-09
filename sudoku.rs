@@ -27,6 +27,7 @@ struct Sudoku {
     blocks: [Field; 9],
     cols: [Field; 9],
     rows: [Field; 9],
+    remaining: usize,
 }
 
 impl Sudoku {
@@ -37,11 +38,11 @@ impl Sudoku {
             } else if i % 27 == 0 {
                 s.push_str("\n\n");
             } else if i % 9 == 0 {
-                s.push_str("\n");
+                s.push('\n');
             } else if i % 3 == 0 {
                 s.push_str("   ");
             } else {
-                s.push_str(" ");
+                s.push(' ');
             }
             s.push_str(&field_to_val(*v).to_string());
         }
@@ -53,9 +54,10 @@ impl Sudoku {
         self.results[location] = val;
 
         let (blk, col, row) = get_indices(location);
-        self.blocks[blk] = self.blocks[blk] & !val;
-        self.cols[col] = self.cols[col] & !val;
-        self.rows[row] = self.rows[row] & !val;
+        self.blocks[blk] &= !val;
+        self.cols[col] &= !val;
+        self.rows[row] &= !val;
+        self.remaining -= 1;
     }
 
     fn clear_value(&mut self, location: usize) {
@@ -64,9 +66,10 @@ impl Sudoku {
         self.results[location] = 0;
 
         let (blk, col, row) = get_indices(location);
-        self.blocks[blk] = self.blocks[blk] | val;
-        self.cols[col] = self.cols[col] | val;
-        self.rows[row] = self.rows[row] | val;
+        self.blocks[blk] |= val;
+        self.cols[col] |= val;
+        self.rows[row] |= val;
+        self.remaining += 1;
     }
 
     fn back_out_moves(&mut self, eager_moves: Vec<usize>) {
@@ -79,7 +82,7 @@ impl Sudoku {
 
         // Stage once, do as many forced moves as possible
         // Keep trying until they stop coming
-        let mut eager_moves: Vec<usize> = vec![];
+        let mut eager_moves: Vec<usize> = Vec::with_capacity(16);
 
         loop {
             let mut solved_count = 0;
@@ -113,7 +116,7 @@ impl Sudoku {
                 // If we're finding moves by elimination don't start guessing yet, just keep on
                 // solving this way
                 continue;
-            } else if lowest_count == std::u32::MAX {
+            } else if self.remaining == 0 {
                 // We won!
                 return true;
             }
@@ -134,7 +137,7 @@ impl Sudoku {
 }
 
 fn val_to_field(x: u8) -> Field  {
-    return 1 << (x-1);
+    1 << (x-1)
 }
 
 fn field_to_val(x: Field) -> u8 {
@@ -154,8 +157,7 @@ fn field_to_val(x: Field) -> u8 {
         assert!(x != 0);
     }
     // Impossible to get here
-    assert!(false);
-    return 0;
+    unreachable!()
 }
 
 fn field_to_vals(x: Field) -> Vec<u8> {
@@ -174,14 +176,14 @@ fn field_to_vals(x: Field) -> Vec<u8> {
         val += 1;
         x >>= 1;
     }
-    return ret;
+    ret
 }
 
 fn get_indices(i: usize) -> (usize, usize, usize) {
     let row = i / 9;
     let col = i % 9;
     let blk = row / 3 + 3 * (col / 3);
-    return (blk, col, row)
+    (blk, col, row)
 }
 
 fn load_sudoku(filename: String) -> Sudoku {
@@ -190,7 +192,8 @@ fn load_sudoku(filename: String) -> Sudoku {
     let mut s = Sudoku { results: [0; 81],
                          blocks: [start_possibilties; 9],
                          cols: [start_possibilties; 9],
-                         rows: [start_possibilties; 9]};
+                         rows: [start_possibilties; 9],
+                         remaining: 81};
 
     let contents = fs::read_to_string(filename)
         .expect("Something went wrong reading the file");
@@ -202,7 +205,7 @@ fn load_sudoku(filename: String) -> Sudoku {
         s.set_value(val_to_field(x), i)
     }
 
-    return s
+    s
 }
 
 impl<'a> IntoIterator for &'a Sudoku {

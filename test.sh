@@ -13,7 +13,7 @@ nim c -d:release --verbosity:0 sudoku.nim
 mv sudoku sudoku_nim
 echo ""
 echo "Compiling Rust"
-rustc -O sudoku.rs -o sudoku_rust
+cargo build --release
 
 echo ""
 echo "C speed 1000 times"

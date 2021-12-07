@@ -13,19 +13,19 @@ nim c -d:release --verbosity:0 sudoku.nim
 mv sudoku sudoku_nim
 echo ""
 echo "Compiling Rust"
-cargo build --release
+RUSTFLAGS="-C target-cpu=native" cargo build --release
 
 echo ""
-echo "C speed 1000 times"
-time for i in {1..1000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
+echo "C speed 10000 times"
+time for i in {1..10000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
 
 echo ""
-echo "Nim speed 1000 times"
-time for i in {1..1000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
+echo "Nim speed 10000 times"
+time for i in {1..10000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
 
 echo ""
-echo "Rust speed 1000 times"
-time for i in {1..1000}; do ./sudoku_rust hard-sudoku.txt > /dev/null; done
+echo "Rust speed 10000 times"
+time for i in {1..10000}; do ./sudoku_rust hard-sudoku.txt > /dev/null; done
 
 echo ""
 echo "Python speed 1000 times"

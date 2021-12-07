@@ -91,7 +91,7 @@ impl Sudoku {
             let mut lowest_possibles: Field = 0;
             for i in 0..81 {
                 if self.results[i] != 0 {
-                    // solved
+                    // this cell is already solved
                     continue;
                 }
                 let (b, c, r) = get_indices(i);

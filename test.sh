@@ -14,6 +14,7 @@ mv sudoku sudoku_nim
 echo ""
 echo "Compiling Rust"
 RUSTFLAGS="-C target-cpu=native" cargo build --release
+cp ./target/release/sudoku_rust sudoku_rust
 
 echo ""
 echo "C speed 10000 times"

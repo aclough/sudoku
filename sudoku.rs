@@ -7,9 +7,8 @@ use std::fs;
 use std::vec;
 
 // TODO
-//   Remaining list to cut down on iteration?
 //   Threading?
-//   Some structure for iterating repitition, passing in a closure or using a macro?
+//   Some structure for iterating repetition, passing in a closure or using a macro?
 
 // The field type is a bitfield where each of the bits represents the possibility that the
 // corresponding digit could be found there.  For instance, if the bitfield is 0x03 then either a 1
@@ -205,7 +204,7 @@ fn load_sudoku(filename: String) -> Sudoku {
         s.set_value(val_to_field(x), i)
     }
 
-    s
+    return s
 }
 
 impl<'a> IntoIterator for &'a Sudoku {

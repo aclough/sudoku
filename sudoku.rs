@@ -143,7 +143,6 @@ fn field_to_val(x: Field) -> u8 {
     if x == 0 {
         return 0;
     }
-    assert!(x.count_ones() == 1);
     let mut val = 1u8;
     let mut x = x;
     while x > 0 {
@@ -185,7 +184,8 @@ fn get_indices(i: usize) -> (usize, usize, usize) {
     (blk, col, row)
 }
 
-fn load_sudoku(filename: String) -> Sudoku {
+fn load_sudoku(filename: &String) -> Sudoku {
+
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
     let start_possibilties:Field = 0x1FF;
     let mut s = Sudoku { results: [0; 81],
@@ -225,8 +225,17 @@ fn main() {
         "puzzle.txt".to_string()
     };
 
-    let mut s = load_sudoku(file);
-    s.print();
-    s.solve();
-    s.print();
+    let count: u32 = if args.len() > 2 {
+        args[2].trim().parse().expect("Please type a number!")
+    } else {
+        1
+    };
+    println!("Solving {} {} times", file, count);
+
+    for i in 0..count {
+        let mut s = load_sudoku(&file);
+        if i == 0 {s.print();}
+        s.solve();
+        if i == 0 {s.print();}
+    }
 }

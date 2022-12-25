@@ -39,14 +39,20 @@ const segmentIndices = getAllIndices()
 
 proc `$`(sudoku: TSudoku): string =
   var str = ""
-  for x in 0..8:
-    for y in 0..8:
-      if (y mod 3) == 0:
-        str = str & " "
-      str = str & " " & $sudoku.grid[9 * x + y]
-    str &= "\n"
-    if (x mod 3) == 2:
-      str &= "\n"
+  for i in 0..80:
+    str &= $sudoku.grid[i]
+    let (blck, col, row) = segmentIndices[i]
+    if col == 8:
+      if row mod 3 == 2:
+        str &= "\n\n"
+      else:
+        str &= "\n"
+    else:
+      if col mod 3 == 2:
+        str &= "  "
+      else:
+        str &= " "
+
   return str
 
 
@@ -81,15 +87,14 @@ proc loadSudoku(fileName: string): TSudoku =
   var file = open(fileName)
   try:
     var index = 0
-    while true:
-      let c = readChar(file)
-      let n = int(c) - int('0')
-      if n >= 0 and n <= 10:
-        if n != 0:
-          result.setLoc(index, n)
-        index += 1
-      if index == 81:
-        break
+    for index in 0..81:
+      while true:
+        let c = readChar(file)
+        let n = int(c) - int('0')
+        if n >= 0 and n <= 10:
+          if n != 0:
+            result.setLoc(index, n)
+          break
   except ValueError:
     echo "Could not parse input file"
   except IOError:

@@ -1,6 +1,6 @@
 import os
 
-const debug = true
+const debug = false
 
 # This is a quick program to solve a sudoku
 # Sudokus are represented as an array of 81 values, set to 1 to 9 if

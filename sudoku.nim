@@ -41,7 +41,7 @@ proc `$`(sudoku: TSudoku): string =
   var str = ""
   for i in 0..80:
     str &= $sudoku.grid[i]
-    let (blck, col, row) = segmentIndices[i]
+    let (_, col, row) = segmentIndices[i]
     if col == 8:
       if row mod 3 == 2:
         str &= "\n\n"
@@ -86,7 +86,6 @@ proc loadSudoku(fileName: string): TSudoku =
   result.setInitialConstraints()
   var file = open(fileName)
   try:
-    var index = 0
     for index in 0..81:
       while true:
         let c = readChar(file)

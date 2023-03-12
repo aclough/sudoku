@@ -1,10 +1,12 @@
 // Rust sudoku implementation
 // This is a heuristic guided search with backout like the Nim version
 
+extern crate bitintr;
+
 use std::assert;
 use std::env;
 use std::fs;
-use std::vec;
+use bitintr::Popcnt;
 
 // TODO
 //   Threading?
@@ -143,6 +145,7 @@ fn field_to_val(x: Field) -> u8 {
     if x == 0 {
         return 0;
     }
+    assert!(x.popcnt() == 1);
     let mut val = 1u8;
     let mut x = x;
     while x > 0 {
@@ -159,7 +162,7 @@ fn field_to_val(x: Field) -> u8 {
 }
 
 fn field_to_vals(x: Field) -> Vec<u8> {
-    let mut ret: Vec<u8> = vec![];
+    let mut ret: Vec<u8> = Vec::with_capacity(usize::from(x.popcnt()));
     if x == 0 {
         return ret;
     }

@@ -1,12 +1,9 @@
 // Rust sudoku implementation
 // This is a heuristic guided search with backout like the Nim version
 
-extern crate bitintr;
-
 use std::assert;
 use std::env;
 use std::fs;
-use bitintr::Popcnt;
 
 // TODO
 //   Threading?
@@ -145,7 +142,9 @@ fn field_to_val(x: Field) -> u8 {
     if x == 0 {
         return 0;
     }
-    assert!(x.popcnt() == 1);
+    assert!(x.count_ones() == 1);
+    // There's a trailing_zeros function that could in theory be used to solve this but I tested it
+    // out and it ends up super slow.
     let mut val = 1u8;
     let mut x = x;
     while x > 0 {
@@ -162,7 +161,11 @@ fn field_to_val(x: Field) -> u8 {
 }
 
 fn field_to_vals(x: Field) -> Vec<u8> {
-    let mut ret: Vec<u8> = Vec::with_capacity(usize::from(x.popcnt()));
+    // In theory, the maximum number of ones returned from count_ones() on a 16 bit number should
+    // be 16, which should fit in a u8, which would let me use `usize::from` here instead of `as`,
+    // sadly it returns a u32 for some reason so we have to do something dangerous looking to the
+    // compiler.
+    let mut ret: Vec<u8> = Vec::with_capacity(x.count_ones() as usize);
     if x == 0 {
         return ret;
     }

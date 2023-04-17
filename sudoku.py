@@ -68,20 +68,23 @@ class Puzzle:
                     self.set(i, int(v))
 
     def __str__(self):
-        slist = ['\n']*3
+        result_string = ['\n']
         for i, v in enumerate(self):
             if i == 0:
                 pass
             elif i % 27 == 0:
-                slist.append("\n\n")
+                result_string.append("\n")
+                result_string.append("-"*21)
+                result_string.append("\n")
             elif i % 9 == 0:
-                slist.append("\n")
+                result_string.append("\n")
             elif i % 3 == 0:
-                slist.append("   ")
+                result_string.append(" | ")
             else:
-                slist.append(" ")
-            slist.append(str(v))
-        return "".join(slist)
+                result_string.append(" ")
+            result_string.append(str(v))
+        result_string.append('\n')
+        return "".join(result_string)
 
 
     def solve(self):

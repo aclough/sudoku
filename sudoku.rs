@@ -15,16 +15,17 @@ use std::fs;
 type Field = u16;
 
 struct Sudoku {
-    // The final derived value, this will either be 0 if still unknown or a bitfield with a single
-    // bit set if the solution has been found.  Left as a field to better interface with the other
-    // arrays.  Left as a Field because it makes set_value and clear_value slightly faster without
-    // the Field/value conversion and we call those much more frequently than we do the print
-    // function which wants these as actual values.
-    results: [Field; 81],
-    // These are the remaining possibilities for the corresponding block, column, or row.
+    // The final derived value for each cell. 0 if still unknown or a bitfield with a single
+    // bit set if the solution has been found. Stored as a field to better interface with
+    // other arrays and improve performance for set_value and clear_value.
+    cells: [Field; 81],
+
+    // Remaining possibilities for each block, column, or row.
     blocks: [Field; 9],
     cols: [Field; 9],
     rows: [Field; 9],
+
+    // Number of remaining unsolved cells
     remaining: usize,
 }
 
@@ -48,8 +49,8 @@ impl Sudoku {
     }
 
     fn set_value(&mut self, val: Field, location: usize) {
-        assert!(self.results[location] == 0);
-        self.results[location] = val;
+        assert!(self.cells[location] == 0);
+        self.cells[location] = val;
 
         let (blk, col, row) = get_indices(location);
         self.blocks[blk] &= !val;
@@ -59,9 +60,9 @@ impl Sudoku {
     }
 
     fn clear_value(&mut self, location: usize) {
-        assert!(self.results[location] != 0);
-        let val = self.results[location];
-        self.results[location] = 0;
+        assert!(self.cells[location] != 0);
+        let val = self.cells[location];
+        self.cells[location] = 0;
 
         let (blk, col, row) = get_indices(location);
         self.blocks[blk] |= val;
@@ -88,7 +89,7 @@ impl Sudoku {
             let mut lowest_count: u32 = std::u32::MAX;
             let mut lowest_possibles: Field = 0;
             for i in 0..81 {
-                if self.results[i] != 0 {
+                if self.cells[i] != 0 {
                     // this cell is already solved
                     continue;
                 }
@@ -194,7 +195,7 @@ fn load_sudoku(filename: &String) -> Sudoku {
 
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
     let start_possibilties:Field = 0x1FF;
-    let mut s = Sudoku { results: [0; 81],
+    let mut s = Sudoku { cells: [0; 81],
                          blocks: [start_possibilties; 9],
                          cols: [start_possibilties; 9],
                          rows: [start_possibilties; 9],
@@ -218,7 +219,7 @@ impl<'a> IntoIterator for &'a Sudoku {
    type IntoIter = std::slice::Iter<'a, Field>;
 
    fn into_iter(self) -> Self::IntoIter {
-       self.results.iter()
+       self.cells.iter()
    }
 }
 

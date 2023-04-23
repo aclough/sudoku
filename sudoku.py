@@ -94,19 +94,18 @@ class Puzzle:
         leastFree = len(self._allowed) + 1
         bestMove = None
         for i, v in enumerate(self):
+            if v != 0:
+                # We've already assigned a value here
+                continue
             frees = self.getFree(i)
             freeSize = len(frees)
-            if v != 0:
-                continue
             if freeSize == 0:
                 raise ValueError("Sudoku unsolvable")
-            elif freeSize == 1:
-                bestMove = None
-                self.trySolveWith(i, frees.pop())
-                break;
             elif freeSize < leastFree:
                 leastFree = freeSize
                 bestMove = i
+            if freeSize == 1:
+                break;
         if self.DEBUG:
             print(self)
         if bestMove:

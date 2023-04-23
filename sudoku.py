@@ -1,4 +1,4 @@
-from typing import Iterator, Tuple, Set
+from typing import Iterator
 import sys
 
 class Puzzle:
@@ -21,7 +21,7 @@ class Puzzle:
     def __iter__(self) -> Iterator[float]:
         return iter(self.cells)
 
-    def getFreeSets(self, loc: int) -> Tuple[Set[int], Set[int], Set[int]]:
+    def getFreeSets(self, loc: int) -> tuple[set[int], set[int], set[int]]:
         rowFree = self.rowFree[loc // 9]
         colFree = self.colFree[loc % 9]
         blkFree = self.blkFree[(loc // 27) + (((loc % 9) // 3) * 3)]

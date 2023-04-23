@@ -33,7 +33,7 @@ class Puzzle:
 
     def set(self, loc: int, val: int):
         if not val in self._allowed:
-            raise ValueError("{} not valid space value".format(val))
+            raise ValueError(f"{val} not valid space value")
         rowFree, colFree, blkFree = self.getFreeSets(loc)
         if val in rowFree and val in colFree and val in blkFree:
             self.cells[loc] = val
@@ -45,7 +45,7 @@ class Puzzle:
 
     def unset(self, loc: int, val: int):
         if not val in self._allowed:
-            raise ValueError("{} not valid space value".format(val))
+            raise ValueError(f"{val} not valid space value")
         rowFree, colFree, blkFree = self.getFreeSets(loc)
         self.cells[loc] = 0
         rowFree.add(val)
@@ -128,4 +128,4 @@ if __name__=='__main__':
         puzzle.solve()
     except (ValueError, IndexError):
         print("\n\nFailed to solve, here's the current state")
-    print(puzzle)
+    print(f"\nSolution is:\n{puzzle}")

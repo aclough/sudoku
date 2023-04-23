@@ -1,7 +1,10 @@
+from typing import Iterator, Tuple, Set
 import sys
 
 class Puzzle:
     "A represenation of a sudoku puzzle"
+
+    DEBUG = False
 
     _allowed = {x for x in range(1,10)}
 
@@ -15,20 +18,20 @@ class Puzzle:
             self.colFree.append(self._allowed.copy())
             self.blkFree.append(self._allowed.copy())
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[float]:
         return iter(self.cells)
 
-    def getFreeSets(self, loc):
+    def getFreeSets(self, loc: int) -> Tuple[Set[int], Set[int], Set[int]]:
         rowFree = self.rowFree[loc // 9]
         colFree = self.colFree[loc % 9]
         blkFree = self.blkFree[(loc // 27) + (((loc % 9) // 3) * 3)]
         return rowFree, colFree, blkFree
 
-    def getFree(self, loc):
+    def getFree(self, loc: int):
         row, col, blk = self.getFreeSets(loc)
         return row & col & blk
 
-    def set(self, loc, val):
+    def set(self, loc: int, val: int):
         if not val in self._allowed:
             raise ValueError("{} not valid space value".format(val))
         rowFree, colFree, blkFree = self.getFreeSets(loc)
@@ -40,7 +43,7 @@ class Puzzle:
         else:
             raise IndexError("Illegal move")
 
-    def unset(self, loc, val):
+    def unset(self, loc: int, val: int):
         if not val in self._allowed:
             raise ValueError("{} not valid space value".format(val))
         rowFree, colFree, blkFree = self.getFreeSets(loc)
@@ -49,7 +52,7 @@ class Puzzle:
         colFree.add(val)
         blkFree.add(val)
 
-    def trySolveWith(self, loc, toTry):
+    def trySolveWith(self, loc: int, toTry: int):
         self.set(loc, toTry)
         try:
             self.solve()
@@ -57,7 +60,7 @@ class Puzzle:
             self.unset(loc, toTry)
             raise
 
-    def load(self, filename):
+    def load(self, filename: str):
         """Load a file as the puzzle."""
         with open(filename, 'r') as f:
             vals = [x for line in f for x in line.split()]
@@ -104,7 +107,8 @@ class Puzzle:
             elif freeSize < leastFree:
                 leastFree = freeSize
                 bestMove = i
-        print(self)
+        if self.DEBUG:
+            print(self)
         if bestMove:
             frees = self.getFree(bestMove)
             for v in frees:

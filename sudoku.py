@@ -6,7 +6,7 @@ class Puzzle:
     _allowed = {x for x in range(1,10)}
 
     def __init__(self):
-        self.spaces = [0] * 81
+        self.cells = [0] * 81
         self.rowFree = []
         self.colFree = []
         self.blkFree = []
@@ -16,7 +16,7 @@ class Puzzle:
             self.blkFree.append(self._allowed.copy())
 
     def __iter__(self):
-        return iter(self.spaces)
+        return iter(self.cells)
 
     def getFreeSets(self, loc):
         rowFree = self.rowFree[loc // 9]
@@ -33,7 +33,7 @@ class Puzzle:
             raise ValueError("{} not valid space value".format(val))
         rowFree, colFree, blkFree = self.getFreeSets(loc)
         if val in rowFree and val in colFree and val in blkFree:
-            self.spaces[loc] = val
+            self.cells[loc] = val
             rowFree.remove(val)
             colFree.remove(val)
             blkFree.remove(val)
@@ -44,7 +44,7 @@ class Puzzle:
         if not val in self._allowed:
             raise ValueError("{} not valid space value".format(val))
         rowFree, colFree, blkFree = self.getFreeSets(loc)
-        self.spaces[loc] = 0
+        self.cells[loc] = 0
         rowFree.add(val)
         colFree.add(val)
         blkFree.add(val)

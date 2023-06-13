@@ -1,12 +1,13 @@
 from typing import Iterator
 import sys
 
+
 class Puzzle:
     "A represenation of a sudoku puzzle"
 
     DEBUG = False
 
-    _allowed = {x for x in range(1,10)}
+    _allowed = {x for x in range(1, 10)}
 
     def __init__(self):
         self.cells = [0] * 81
@@ -32,7 +33,7 @@ class Puzzle:
         return row & col & blk
 
     def set(self, loc: int, val: int):
-        if not val in self._allowed:
+        if val not in self._allowed:
             raise ValueError(f"{val} not valid space value")
         rowFree, colFree, blkFree = self.getFreeSets(loc)
         if val in rowFree and val in colFree and val in blkFree:
@@ -44,7 +45,7 @@ class Puzzle:
             raise IndexError("Illegal move")
 
     def unset(self, loc: int, val: int):
-        if not val in self._allowed:
+        if val not in self._allowed:
             raise ValueError(f"{val} not valid space value")
         rowFree, colFree, blkFree = self.getFreeSets(loc)
         self.cells[loc] = 0
@@ -89,7 +90,6 @@ class Puzzle:
         result_string.append('\n')
         return "".join(result_string)
 
-
     def solve(self):
         leastFree = len(self._allowed) + 1
         bestMove = None
@@ -105,7 +105,7 @@ class Puzzle:
                 leastFree = freeSize
                 bestMove = i
             if freeSize == 1:
-                break;
+                break
         if self.DEBUG:
             print(self)
         if bestMove:
@@ -120,7 +120,7 @@ class Puzzle:
                 raise ValueError("No solutions on this branch")
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     puzzle = Puzzle()
     puzzle.load(sys.argv[1])
     print(puzzle)

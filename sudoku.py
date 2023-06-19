@@ -3,7 +3,7 @@ import sys
 
 
 class Puzzle:
-    "A represenation of a sudoku puzzle"
+    "A representation of a sudoku puzzle"
 
     DEBUG = False
 

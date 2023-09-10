@@ -10,16 +10,16 @@ class Puzzle:
     _allowed = {x for x in range(1, 10)}
 
     def __init__(self):
-        self.cells = [0] * 81
-        self.rowFree = []
-        self.colFree = []
-        self.blkFree = []
+        self.cells: List[int] = [0] * 81
+        self.rowFree: List[set[int]] = []
+        self.colFree: List[set[int]] = []
+        self.blkFree: List[set[int]] = []
         for i in range(9):
             self.rowFree.append(self._allowed.copy())
             self.colFree.append(self._allowed.copy())
             self.blkFree.append(self._allowed.copy())
 
-    def __iter__(self) -> Iterator[float]:
+    def __iter__(self) -> Iterator[int]:
         return iter(self.cells)
 
     def getFreeSets(self, loc: int) -> tuple[set[int], set[int], set[int]]:
@@ -28,7 +28,7 @@ class Puzzle:
         blkFree = self.blkFree[(loc // 27) + (((loc % 9) // 3) * 3)]
         return rowFree, colFree, blkFree
 
-    def getFree(self, loc: int):
+    def getFree(self, loc: int) -> set[int]:
         row, col, blk = self.getFreeSets(loc)
         return row & col & blk
 

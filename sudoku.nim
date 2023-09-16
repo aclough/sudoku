@@ -17,7 +17,7 @@ const debug = false
 type
   SegmentNums = tuple[blck,col,row: int]
   Possibles = set[1..9] # Values remaining for placement in a segment
-  Sudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, Possibles]]
+  Sudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, Possibles], remaining: int]
 
 proc getIndices(i: int): SegmentNums =
   result.row = i div 9
@@ -62,6 +62,7 @@ proc setInitialConstraints(sudoku: var Sudoku) =
     sudoku.blck[i] = all
     sudoku.col[i] = all
     sudoku.row[i] = all
+  sudoku.remaining = 81
 
 proc setLoc(sudoku: var Sudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
@@ -69,6 +70,7 @@ proc setLoc(sudoku: var Sudoku, index, value: int) =
   excl(sudoku.blck[blck], value)
   excl(sudoku.col[col], value)
   excl(sudoku.row[row], value)
+  sudoku.remaining += 1
 
 proc clrLoc(sudoku: var Sudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
@@ -79,6 +81,7 @@ proc clrLoc(sudoku: var Sudoku, index, value: int) =
   incl(sudoku.blck[blck], value)
   incl(sudoku.col[col], value)
   incl(sudoku.row[row], value)
+  sudoku.remaining -= 1
 
 proc loadSudoku(fileName: string): Sudoku =
   result.setInitialConstraints()
@@ -118,35 +121,31 @@ proc solve(sudoku: var Sudoku): bool =
     eagerMoves: seq[tuple[i,n:int]] = @[]
     lowCount: int
   block getMostConstrained:
-    var eagerSolutions: int
     while true:
       lowCount = 100
+      var previousRemaining = sudoku.remaining
       for i in 0..80:
-        eagerSolutions = 0
         if sudoku.grid[i] != 0:
           continue
         let (blck, col, row) = segmentIndices[i]
         let possibles = sudoku.blck[blck] * sudoku.col[col] * sudoku.row[row]
         let numPossibilities = card(possibles)
-        if numPossibilities < lowCount:
-          if numPossibilities == 0:
-            sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
-          elif numPossibilities == 1:
-            # There's a single valid move for this spot so we'll set it eagerly now rather
-            # than waiting and trying it.
-            for n in possibles:
-              sudoku.setLoc(i,n)
-              eagerMoves.add((i,n))
-            eagerSolutions += 1
-            continue
-          else:
-            mostContrainedSpace = i
-            possibilities = possibles
-            lowCount = numPossibilities
-      if eagerSolutions == 0:
+        if numPossibilities == 0:
+          sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
+        elif numPossibilities == 1:
+          # There's a single valid move for this spot so we'll set it eagerly now rather
+          # than waiting and trying it.
+          for n in possibles:
+            sudoku.setLoc(i,n)
+            eagerMoves.add((i,n))
+        elif numPossibilities < lowCount:
+          mostContrainedSpace = i
+          possibilities = possibles
+          lowCount = numPossibilities
+      if sudoku.remaining == 0:
+        return true
+      elif previousRemaining == sudoku.remaining:
         break getMostConstrained
-  if lowCount == 100: # We never found a blank square
-    return true
   for n in possibilities:
     sudoku.setLoc(mostContrainedSpace, n)
     if sudoku.solve():

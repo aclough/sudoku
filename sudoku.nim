@@ -15,16 +15,16 @@ const debug = false
 # guess is stored on the stack.
 
 type
-  TSegmentNums = tuple[blck,col,row: int]
-  TPossibles = set[1..9] # Values remaining for placement in a segment
-  TSudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, TPossibles]]
+  SegmentNums = tuple[blck,col,row: int]
+  Possibles = set[1..9] # Values remaining for placement in a segment
+  Sudoku = tuple[grid: array[0..80, 0..9], blck,col,row:array[0..8, Possibles]]
 
-proc getIndices(i: int): TSegmentNums =
+proc getIndices(i: int): SegmentNums =
   result.row = i div 9
   result.col = i mod 9
   result.blck = (result.row div 3) + 3*(result.col div 3)
 
-proc getAllIndices(): array[0..80, TSegmentNums] =
+proc getAllIndices(): array[0..80, SegmentNums] =
   for i in 0..80:
     result[i] = getIndices(i)
 
@@ -36,8 +36,7 @@ proc getAllIndices(): array[0..80, TSegmentNums] =
 # that I'm worried about anything getting pushed out of L1$
 const segmentIndices = getAllIndices()
 
-
-proc `$`(sudoku: TSudoku): string =
+proc `$`(sudoku: Sudoku): string =
   var str = ""
   for i in 0..80:
     str &= $sudoku.grid[i]
@@ -55,9 +54,8 @@ proc `$`(sudoku: TSudoku): string =
 
   return str
 
-
-proc setInitialConstraints(sudoku: var TSudoku) =
-  var all: TPossibles
+proc setInitialConstraints(sudoku: var Sudoku) =
+  var all: Possibles
   for i in 1..9:
     incl(all, i)
   for i in 0..8:
@@ -65,14 +63,14 @@ proc setInitialConstraints(sudoku: var TSudoku) =
     sudoku.col[i] = all
     sudoku.row[i] = all
 
-proc setLoc(sudoku: var TSudoku, index, value: int) =
+proc setLoc(sudoku: var Sudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
   sudoku.grid[index] = value
   excl(sudoku.blck[blck], value)
   excl(sudoku.col[col], value)
   excl(sudoku.row[row], value)
 
-proc clrLoc(sudoku: var TSudoku, index, value: int) =
+proc clrLoc(sudoku: var Sudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
   when debug:
     if sudoku.grid[index] != value:
@@ -82,7 +80,7 @@ proc clrLoc(sudoku: var TSudoku, index, value: int) =
   incl(sudoku.col[col], value)
   incl(sudoku.row[row], value)
 
-proc loadSudoku(fileName: string): TSudoku =
+proc loadSudoku(fileName: string): Sudoku =
   result.setInitialConstraints()
   var file = open(fileName)
   try:
@@ -107,57 +105,57 @@ proc loadSudoku(fileName: string): TSudoku =
 # returns.  But I'm really writing this to learn Nimrod so might as well put
 # it in.  I guess I do prefer Rust's requiring macros to have a '!' to warn
 # readers in cases like this.
-template backout(sudoku: TSudoku, toRemove: seq[tuple[i, n: int]]) =
+template backout(sudoku: Sudoku, toRemove: seq[tuple[i, n: int]]) =
   for b in toRemove:
     sudoku.clrLoc(b.i, b.n)
   return false
 
 
-proc solve(sudoku: var TSudoku): bool =
+proc solve(sudoku: var Sudoku): bool =
   var
-    mostConstrained: int
-    possibilities: TPossibles
+    mostContrainedSpace: int
+    possibilities: Possibles
     eagerMoves: seq[tuple[i,n:int]] = @[]
     lowCount: int
   block getMostConstrained:
-    var solved: int
+    var eagerSolutions: int
     while true:
       lowCount = 100
       for i in 0..80:
-        solved = 0
+        eagerSolutions = 0
         if sudoku.grid[i] != 0:
           continue
         let (blck, col, row) = segmentIndices[i]
         let possibles = sudoku.blck[blck] * sudoku.col[col] * sudoku.row[row]
-        let count = card(possibles)
-        if count < lowCount:
-          if count == 0:
+        let numPossibilities = card(possibles)
+        if numPossibilities < lowCount:
+          if numPossibilities == 0:
             sudoku.backout(eagerMoves) # No valid moves so back out of this search branch
-          elif count == 1:
+          elif numPossibilities == 1:
             # There's a single valid move for this spot so we'll set it eagerly now rather
             # than waiting and trying it.
             for n in possibles:
               sudoku.setLoc(i,n)
               eagerMoves.add((i,n))
-            solved += 1
+            eagerSolutions += 1
             continue
           else:
-            mostConstrained = i
+            mostContrainedSpace = i
             possibilities = possibles
-            lowCount = count
-      if solved == 0:
+            lowCount = numPossibilities
+      if eagerSolutions == 0:
         break getMostConstrained
   if lowCount == 100: # We never found a blank square
     return true
   for n in possibilities:
-    sudoku.setLoc(mostConstrained, n)
+    sudoku.setLoc(mostContrainedSpace, n)
     if sudoku.solve():
       return true
-    sudoku.clrLoc(mostConstrained, n)
+    sudoku.clrLoc(mostContrainedSpace, n)
   sudoku.backout(eagerMoves) # there were no valid moves at c.pos so go back
 
 var
-  m_sudoku: TSudoku
+  m_sudoku: Sudoku
 try:
   m_sudoku = loadSudoku(commandLineParams()[0])
 except ValueError:

@@ -45,7 +45,7 @@ impl Sudoku {
             }
             s.push_str(&field_to_val(*v).to_string());
         }
-        println!("{}\n\n", s);
+        println!("{s}\n\n");
     }
 
     fn set_value(&mut self, val: Field, location: usize) {
@@ -237,7 +237,7 @@ fn main() {
     } else {
         1
     };
-    println!("Solving {} {} times", file, count);
+    println!("Solving {file} {count} times");
 
     for i in 0..count {
         let mut s = load_sudoku(&file);

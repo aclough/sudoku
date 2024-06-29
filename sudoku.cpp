@@ -45,7 +45,35 @@ public:
 
     }
 
+    string to_string() const {
+        string result;
+        for (int i = 0; i < 81; i++) {
+            if (i && i % 27 == 0) {
+                result += "\n";
+            }
+            if (i % 9 == 0) {
+                result += "\n";
+            } else if (i % 3 == 0) {
+                result += "   ";
+            } else {
+                result += " ";
+            }
+
+            if (cells[i].none()) {
+                result += ".";
+            } else {
+                result += cells[i].to_string();
+            }
+        }
+        return result;
+    }
+
 };
+
+ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
+    out << sudoku.to_string() << endl;
+    return out;
+}
 
 
 int main() {
@@ -56,5 +84,6 @@ int main() {
     }
     SudokuProblem problem(input_file);
     input_file.close();
+    cout << problem << endl;
     return 0;
 }

@@ -43,9 +43,8 @@ public:
             // Handle the error (e.g., throw an exception)
         }
 
-        // Todo, check for more values
-        // Todo, close the file here or at the call site
     }
+
 };
 
 
@@ -56,5 +55,6 @@ int main() {
         return 1;
     }
     SudokuProblem problem(input_file);
+    input_file.close();
     return 0;
 }

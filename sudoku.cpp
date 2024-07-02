@@ -4,11 +4,31 @@
 
 using namespace std;
 
+// To try:
+// Make Field its own class
+
 // A type representing the possibilities for a single cell in the Sudoku board.
 // For blocks, rows, and columns, there will be a number of bits set fo the unused
 // values in that location.  For the cells it will be either 0 for a blank cell or
 // have a single value for the filled cell
-typedef bitset<9> Field;
+// The set is 1 bit larger than is needed to avoid special logic to deal with
+// the 0 position.
+typedef bitset<10> Field;
+
+string field_to_string(Field field) {
+    if (field.count() > 1) {
+        throw invalid_argument("Can only convert single solution Field to string");
+    }
+
+    string result;
+    for (int i = 1; i < 10; i++) {
+        if (field.test(i)) {
+            return std::to_string(i);
+        }
+    }
+    // Check at start prevents getting here
+    return ".";
+}
 
 class Indices {
 public:
@@ -34,15 +54,19 @@ private:
     Field rows[9];
     Field cols[9];
 
-    void set_value(int location, Field value) {
+    void set_value(int location, int value) {
         if (cells[location].any()) {
             throw invalid_argument("Tried to set already set cell");
         }
-        cells[location] = value;
+        if (value == 0) {
+            throw invalid_argument("Can't set cell to 0.");
+        }
+        cells[location].set(value);
+
         Indices indices(location);
-        blocks[indices.block] &= ~value;
-        rows[indices.row] &= ~value;
-        cols[indices.col] &= ~value;
+        blocks[indices.block].reset(value);
+        rows[indices.row].reset(value);
+        cols[indices.col].reset(value);
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.
@@ -50,11 +74,14 @@ public:
 
     SudokuProblem(ifstream& input_file) {
         string value;
+        // Index of the current value being read
         int i = 0;
         while  (input_file >> value) {
             try {
                 int spot_value = stoi(value);
-                set_value(i, spot_value);
+                if (spot_value) {
+                    set_value(i, spot_value);
+                }
                 i++;
             } catch (const invalid_argument& e) {
                 // As long as we have 81 numbers, extraneous values aren't a problem
@@ -83,11 +110,7 @@ public:
                 result += " ";
             }
 
-            if (cells[i].none()) {
-                result += ".";
-            } else {
-                result += std::to_string(cells[i].to_ulong());
-            }
+            result += field_to_string(cells[i]);
         }
         return result;
     }

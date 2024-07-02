@@ -10,6 +10,19 @@ using namespace std;
 // have a single value for the filled cell
 typedef bitset<9> Field;
 
+class Indices {
+public:
+    unsigned char block;
+    unsigned char row;
+    unsigned char col;
+
+    Indices (int index) {
+        row = index / 9;
+        col = index % 9;
+        block = row / 3 + 3 * col / 3;
+    }
+};
+
 class SudokuProblem {
 private:
     // 0 for unknown,
@@ -21,21 +34,32 @@ private:
     Field rows[9];
     Field cols[9];
 
-    void set_value(int value) {
-        // FIXME
+    void set_value(int location, Field value) {
+        if (cells[location].any()) {
+            throw invalid_argument("Tried to set already set cell");
+        }
+        cells[location] = value;
+        Indices indices(location);
+        blocks[indices.block] &= ~value;
+        rows[indices.row] &= ~value;
+        cols[indices.col] &= ~value;
     }
 public:
+    // A copy of the input that produced this problem for debugging purposes.
+    string input;
+
     SudokuProblem(ifstream& input_file) {
         string value;
         int i = 0;
         while  (input_file >> value) {
             try {
                 int spot_value = stoi(value);
-                set_value(spot_value);
+                set_value(i, spot_value);
                 i++;
             } catch (const invalid_argument& e) {
                 // As long as we have 81 numbers, extraneous values aren't a problem
             }
+            input += value;
         }
         if (i != 81) {
             cerr << "Got " << i << " numbers" << endl;
@@ -62,7 +86,7 @@ public:
             if (cells[i].none()) {
                 result += ".";
             } else {
-                result += cells[i].to_string();
+                result += std::to_string(cells[i].to_ulong());
             }
         }
         return result;

@@ -68,6 +68,19 @@ private:
         rows[indices.row].reset(value);
         cols[indices.col].reset(value);
     }
+
+    void clear_value(int location) {
+        if (!cells[location].any()) {
+            throw invalid_argument("Tried to clear already clear cell");
+        }
+        int value = cells[location].count();
+        cells[location].reset();
+
+        Indices indices(location);
+        blocks[indices.block].set(value);
+        rows[indices.row].set(value);
+        cols[indices.col].set(value);
+    }
 public:
     // A copy of the input that produced this problem for debugging purposes.
     string input;

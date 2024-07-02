@@ -2,6 +2,7 @@
 #include <bitset>
 #include <fstream>
 #include <vector>
+#include <array>
 
 using namespace std;
 
@@ -15,6 +16,9 @@ using namespace std;
 // The set is 1 bit larger than is needed to avoid special logic to deal with
 // the 0 position.
 typedef bitset<10> Field;
+
+// Constant to initialize the field with all values possible
+const int field_init = 0b1111111110;
 
 string field_to_string(Field field) {
     if (field.count() > 1) {
@@ -40,7 +44,11 @@ public:
     Indices (int index) {
         row = index / 9;
         col = index % 9;
-        block = row / 3 + 3 * col / 3;
+        block = row / 3 + 3 * (col / 3);
+    }
+
+    void print() {
+        cout << "Block: " << (int) block << " Row: " << (int) row << " Col: " << (int) col << endl;
     }
 };
 
@@ -48,39 +56,42 @@ class SudokuProblem {
 private:
     // 0 for unknown,
     // Bits 1-9 set for known value
-    Field cells[81];
+    array<Field, 81> cells;
 
     // Stores the remaining unused value in each region.
-    Field blocks[9];
-    Field rows[9];
-    Field cols[9];
+    array<Field, 9> blocks;
+    array<Field, 9> rows;
+    array<Field, 9> cols;
+    int unsolved_spaces = 81;
 
-    void set_value(int location, int value) {
+    void set_value(int location, Field value) {
         if (cells[location].any()) {
             throw invalid_argument("Tried to set already set cell");
         }
         if (value == 0) {
             throw invalid_argument("Can't set cell to 0.");
         }
-        cells[location].set(value);
+        cells[location] = value;
 
         Indices indices(location);
-        blocks[indices.block].reset(value);
-        rows[indices.row].reset(value);
-        cols[indices.col].reset(value);
+        blocks[indices.block] &= ~value;
+        rows[indices.row] &= ~value;
+        cols[indices.col] &= ~value;
+        unsolved_spaces--;
     }
 
     void clear_value(int location) {
         if (!cells[location].any()) {
             throw invalid_argument("Tried to clear already clear cell");
         }
-        int value = cells[location].count();
+        Field value = cells[location];
         cells[location].reset();
 
         Indices indices(location);
-        blocks[indices.block].set(value);
-        rows[indices.row].set(value);
-        cols[indices.col].set(value);
+        blocks[indices.block] |= value;
+        rows[indices.row] |= value;
+        cols[indices.col] |= value;
+        unsolved_spaces++;
     }
 
     void clear_moves(vector<int> moves) {
@@ -93,6 +104,12 @@ public:
     string input;
 
     SudokuProblem(ifstream& input_file) {
+        for (int i = 0; i < 9; i++) {
+            // Making Field a class could obviate this
+            blocks[i] = field_init;
+            rows[i] = field_init;
+            cols[i] = field_init;
+        }
         string value;
         // Index of the current value being read
         int i = 0;
@@ -100,7 +117,7 @@ public:
             try {
                 int spot_value = stoi(value);
                 if (spot_value) {
-                    set_value(i, spot_value);
+                    set_value(i, Field(1 << spot_value));
                 }
                 i++;
             } catch (const invalid_argument& e) {
@@ -135,6 +152,38 @@ public:
         return result;
     }
 
+    bool solve() {
+        while (true) {
+            int solutions_found = 0;
+            for (int i = 0; i < 81; ++i) {
+                if (cells[i].count() != 0) {
+                    // Already solved
+                    continue;
+                }
+                Indices indices(i);
+                Field possibilities = blocks[indices.block] & rows[indices.row] & cols[indices.col];
+                if (possibilities.count() == 1) {
+                    set_value(i, possibilities);
+                    solutions_found++;
+                } else if (possibilities.count() == 0) {
+                    // We've eliminated all possible solutions here
+                    return false;
+                } else {
+                    // Pass, for now
+                }
+            }
+            if (unsolved_spaces == 0) {
+                // We won!
+                return true;
+            }
+            if (solutions_found == 0) {
+                return false;
+            }
+            // Continue working
+            cout << unsolved_spaces << " unsolved spaces left" << endl;
+        }
+    }
+
 };
 
 ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
@@ -151,6 +200,13 @@ int main() {
     }
     SudokuProblem problem(input_file);
     input_file.close();
+    cout << problem << endl;
+    bool succeeded = problem.solve();
+    if (succeeded) {
+        cout << "Solved!" << endl;
+    } else {
+        cout << "Failed to solve" << endl;
+    }
     cout << problem << endl;
     return 0;
 }

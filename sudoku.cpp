@@ -35,6 +35,16 @@ string field_to_string(Field field) {
     return ".";
 }
 
+vector<Field> get_possible_moves(Field field) {
+    vector<Field> result;
+    for (int i = 1; i < 10; i++) {
+        if (field.test(i)) {
+            result.push_back(Field(1 << i));
+        }
+    }
+    return result;
+}
+
 class Indices {
 public:
     unsigned char block;
@@ -97,11 +107,14 @@ private:
     void clear_moves(vector<int> moves) {
         for (auto location: moves) {
             clear_value(location);
+            forceing_passes--;
         }
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.
     string input;
+    int forceing_passes = 0;
+    int guesses = 0;
 
     SudokuProblem(ifstream& input_file) {
         for (int i = 0; i < 9; i++) {
@@ -153,9 +166,13 @@ public:
     }
 
     bool solve() {
+        vector<int> forced_moves;
         while (true) {
             int solutions_found = 0;
-            for (int i = 0; i < 81; ++i) {
+            int most_constrained_space = 0;
+            int most_constrained_count = 10;
+            Field most_constrained_possibilities;
+            for (int i = 0; i < 81; i++) {
                 if (cells[i].count() != 0) {
                     // Already solved
                     continue;
@@ -164,23 +181,41 @@ public:
                 Field possibilities = blocks[indices.block] & rows[indices.row] & cols[indices.col];
                 if (possibilities.count() == 1) {
                     set_value(i, possibilities);
+                    forced_moves.push_back(i);
                     solutions_found++;
                 } else if (possibilities.count() == 0) {
                     // We've eliminated all possible solutions here
+                    clear_moves(forced_moves);
                     return false;
-                } else {
-                    // Pass, for now
+                } else if (possibilities.count() < most_constrained_count) {
+                    most_constrained_space = i;
+                    most_constrained_count = possibilities.count();
+                    most_constrained_possibilities = possibilities;
                 }
             }
+            forceing_passes++;
+            // Continue working
             if (unsolved_spaces == 0) {
                 // We won!
                 return true;
             }
-            if (solutions_found == 0) {
-                return false;
+            if (solutions_found != 0) {
+                continue; // Go to another pass
             }
-            // Continue working
-            cout << unsolved_spaces << " unsolved spaces left" << endl;
+
+            // Move to guess and check
+            vector<Field> moves = get_possible_moves(most_constrained_possibilities);
+            guesses++;
+            for (auto move: moves) {
+                set_value(most_constrained_space, move);
+                if (solve()) {
+                    return true;
+                }
+                clear_value(most_constrained_space);
+            }
+            guesses--;
+            clear_moves(forced_moves);
+            return false;
         }
     }
 
@@ -191,9 +226,8 @@ ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
     return out;
 }
 
-
 int main() {
-    ifstream input_file("puzzle.txt");
+    ifstream input_file("hard-sudoku.txt");
     if (!input_file.is_open()) {
         cout << "Error opening file" << endl;
         return 1;
@@ -207,6 +241,8 @@ int main() {
     } else {
         cout << "Failed to solve" << endl;
     }
+    cout << problem.forceing_passes << " forcing passes" << endl;
+    cout << problem.guesses << " guesses" << endl;
     cout << problem << endl;
     return 0;
 }

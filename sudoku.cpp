@@ -1,6 +1,7 @@
 #include <iostream>
 #include <bitset>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -46,7 +47,7 @@ public:
 class SudokuProblem {
 private:
     // 0 for unknown,
-    // 1-9 for known value
+    // Bits 1-9 set for known value
     Field cells[81];
 
     // Stores the remaining unused value in each region.
@@ -80,6 +81,12 @@ private:
         blocks[indices.block].set(value);
         rows[indices.row].set(value);
         cols[indices.col].set(value);
+    }
+
+    void clear_moves(vector<int> moves) {
+        for (auto location: moves) {
+            clear_value(location);
+        }
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.

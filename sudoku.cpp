@@ -51,9 +51,10 @@ public:
     unsigned char row;
     unsigned char col;
 
-    Indices (int index) {
-        row = index / 9;
-        col = index % 9;
+    Indices (int index) : row{index/9},
+                          col{index%9} {
+    {
+        // Can't use an iniitalization list when you depend on a previous value
         block = row / 3 + 3 * (col / 3);
     }
 

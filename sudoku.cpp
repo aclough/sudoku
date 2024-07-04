@@ -226,8 +226,12 @@ ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
     return out;
 }
 
-int main() {
-    ifstream input_file("hard-sudoku.txt");
+int main(int argc, char** argv) {
+    string filename = "hard-sudoku.txt";
+    if (argc > 1) {
+        filename = argv[1];
+    }
+    ifstream input_file(filename);
     if (!input_file.is_open()) {
         cout << "Error opening file" << endl;
         return 1;

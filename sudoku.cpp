@@ -47,12 +47,12 @@ vector<Field> get_possible_moves(Field field) {
 
 class Indices {
 public:
-    unsigned char block;
-    unsigned char row;
-    unsigned char col;
+    int block;
+    int row;
+    int col;
 
-    Indices (int index) : row{index/9},
-                          col{index%9} {
+    Indices (int index) : row{index / 9},
+                          col{index % 9}
     {
         // Can't use an iniitalization list when you depend on a previous value
         block = row / 3 + 3 * (col / 3);
@@ -239,15 +239,14 @@ int main(int argc, char** argv) {
     }
     SudokuProblem problem(input_file);
     input_file.close();
-    cout << problem << endl;
     bool succeeded = problem.solve();
     if (succeeded) {
         cout << "Solved!" << endl;
     } else {
         cout << "Failed to solve" << endl;
     }
-    cout << problem.forceing_passes << " forcing passes" << endl;
-    cout << problem.guesses << " guesses" << endl;
+    // cout << problem.forceing_passes << " forcing passes" << endl;
+    // cout << problem.guesses << " guesses" << endl;
     cout << problem << endl;
     return 0;
 }

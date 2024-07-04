@@ -31,7 +31,6 @@ string field_to_string(Field field) {
             return std::to_string(i);
         }
     }
-    // Check at start prevents getting here
     return ".";
 }
 
@@ -47,19 +46,18 @@ vector<Field> get_possible_moves(Field field) {
 
 class Indices {
 public:
-    int block;
-    int row;
-    int col;
+    const int block;
+    const int row;
+    const int col;
 
-    Indices (int index) : row{index / 9},
-                          col{index % 9}
-    {
-        // Can't use an iniitalization list when you depend on a previous value
-        block = row / 3 + 3 * (col / 3);
-    }
+    Indices (int index) :
+        row{index / 9},
+        col{index % 9},
+        block{(index / 27) * 3 + (index % 9) / 3}
+    {}
 
-    void print() {
-        cout << "Block: " << (int) block << " Row: " << (int) row << " Col: " << (int) col << endl;
+    void print() const {
+        cout << "Block: " << block << " Row: " <<  row << " Col: " << col << endl;
     }
 };
 

@@ -70,7 +70,7 @@ proc setLoc(sudoku: var Sudoku, index, value: int) =
   excl(sudoku.blck[blck], value)
   excl(sudoku.col[col], value)
   excl(sudoku.row[row], value)
-  sudoku.remaining += 1
+  sudoku.remaining -= 1
 
 proc clrLoc(sudoku: var Sudoku, index, value: int) =
   let (blck, col, row) = segmentIndices[index]
@@ -81,7 +81,7 @@ proc clrLoc(sudoku: var Sudoku, index, value: int) =
   incl(sudoku.blck[blck], value)
   incl(sudoku.col[col], value)
   incl(sudoku.row[row], value)
-  sudoku.remaining -= 1
+  sudoku.remaining += 1
 
 proc loadSudoku(fileName: string): Sudoku =
   result.setInitialConstraints()

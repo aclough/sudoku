@@ -4,9 +4,9 @@
 #include <vector>
 #include <array>
 
-// Running the risk that if something new is defined in std that conflicts with one
-// of my definitions I'll get a namespace collision.
-using namespace std;
+using std::cout, std::endl, std::cerr, std::ifstream, std::string,
+      std::bitset, std::array, std::vector, std::invalid_argument,
+      std::ostream;
 
 // A bitset representing all 9 possible numbers that a Sudoku cell could take, plus
 // an extra bit in position 0 to make the indexing easier.

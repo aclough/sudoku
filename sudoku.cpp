@@ -1,8 +1,8 @@
-#include <iostream>
+#include <array>
 #include <bitset>
 #include <fstream>
+#include <iostream>
 #include <vector>
-#include <array>
 
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
       std::bitset, std::array, std::vector, std::invalid_argument,

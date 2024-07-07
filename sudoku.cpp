@@ -155,7 +155,12 @@ public:
     }
 
     string to_string() const {
+        const int size = 81 * 2 // 81 cells, 2 characters per cell
+            + 9 * 2 * 2 // Extra spaces for the block boundaries
+            + 9 // 9 newlines
+            + 2; // 2 extra newlines for block boundaries
         string result;
+        result.reserve(size);
         for (int i = 0; i < 81; i++) {
             if (i && i % 27 == 0) {
                 result += "\n";

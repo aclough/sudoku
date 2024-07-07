@@ -33,7 +33,7 @@ class Field {
         void add(Value value) {
             data |= value;
         }
-        Field operator&(const Field &other) {
+        Field operator&(const Field &other) const {
             return Field(data & other.data);
         }
         int count() const {
@@ -143,13 +143,15 @@ private:
     void clear_moves(vector<int> moves) {
         for (auto location: moves) {
             clear_value(location);
-            forceing_passes--;
+            forcing_passes--;
         }
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.
     string input;
-    int forceing_passes{0};
+    // How many passes through the different forcings we've made.
+    int forcing_passes{0};
+    // How many times we guessed the value rather than forcing it.
     int guesses{0};
 
     SudokuProblem(ifstream& input_file) {
@@ -228,7 +230,7 @@ public:
                     most_constrained_possibilities = possibilities;
                 }
             }
-            forceing_passes++;
+            forcing_passes++;
             // Continue working
             if (unsolved_spaces == 0) {
                 // We won!
@@ -279,7 +281,7 @@ int main(int argc, char** argv) {
     } else {
         cout << "Failed to solve" << endl;
     }
-    // cout << problem.forceing_passes << " forcing passes" << endl;
+    // cout << problem.forcing_passes << " forcing passes" << endl;
     // cout << problem.guesses << " guesses" << endl;
     cout << problem << endl;
     return 0;

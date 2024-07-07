@@ -8,6 +8,7 @@ use std::fs;
 // TODO
 //   Threading?
 //   Some structure for iterating repetition, passing in a closure or using a macro?
+//   Check if compile time index calculation is possible now.
 
 // The field type is a bitfield where each of the bits represents the possibility that the
 // corresponding digit could be found there.  For instance, if the bitfield is 0x03 then either a 1

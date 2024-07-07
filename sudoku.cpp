@@ -23,6 +23,7 @@ class Field {
     private:
         Value data;
     public:
+        // Nine 1s then a 0 to represent the 9 possible values
         Field() : data(0b11111111110) {}
         Field(Value init) : data(init) {}
         bool test(int i) const {
@@ -48,15 +49,12 @@ class Field {
         }
 };
 
-// Constant to initialize the field with all values possible
-const int field_init = 0b1111111110;
-
 string field_to_string(Value value) {
     // Can only convert single solution Value to string
     assert(value.count() <= 1);
 
     string result;
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i <= 9; i++) {
         if (value.test(i)) {
             return std::to_string(i);
         }
@@ -66,7 +64,7 @@ string field_to_string(Value value) {
 
 vector<Value> get_possible_moves(Field field) {
     vector<Value> result;
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i <= 9; i++) {
         if (field.test(i)) {
             result.push_back(Value(1 << i));
         }

@@ -76,7 +76,7 @@ private:
     array<Field, 9> cols;
     int unsolved_spaces = 81;
 
-    void set_value(int location, Field value) {
+    void set_value(const int location, const Field value) {
         if (cells[location].any()) {
             throw invalid_argument("Tried to set already set cell");
         }
@@ -95,7 +95,7 @@ private:
         unsolved_spaces--;
     }
 
-    void clear_value(int location) {
+    void clear_value(const int location) {
         if (!cells[location].any()) {
             throw invalid_argument("Tried to clear already clear cell");
         }

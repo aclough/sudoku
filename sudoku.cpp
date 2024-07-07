@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 
+// Running the risk that if something new is defined in std that conflicts with one
+// of my definitions I'll get a namespace collision.
 using namespace std;
 
 // To try:

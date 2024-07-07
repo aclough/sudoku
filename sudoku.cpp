@@ -1,5 +1,6 @@
 #include <array>
 #include <bitset>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -51,9 +52,8 @@ class Field {
 const int field_init = 0b1111111110;
 
 string field_to_string(Value value) {
-    if (value.count() > 1) {
-        throw invalid_argument("Can only convert single solution Value to string");
-    }
+    // Can only convert single solution Value to string
+    assert(value.count() <= 1);
 
     string result;
     for (int i = 1; i < 10; i++) {
@@ -105,15 +105,10 @@ private:
     int unsolved_spaces = 81;
 
     void set_value(const int location, const Value value) {
-        if (cells[location].any()) {
-            throw invalid_argument("Tried to set already set cell");
-        }
-        if (value == 0) {
-            throw invalid_argument("Can't set cell to 0.");
-        }
-        if (location < 0 || location >= 81) {
-            throw invalid_argument("Invalid location");
-        }
+        assert(cells[location].none());
+        assert(value != 0);
+        assert(location >= 0 && location < 81);
+
         cells[location] = value;
 
         Indices indices(location);
@@ -124,12 +119,9 @@ private:
     }
 
     void clear_value(const int location) {
-        if (!cells[location].any()) {
-            throw invalid_argument("Tried to clear already clear cell");
-        }
-        if (location < 0 || location >= 81) {
-            throw invalid_argument("Invalid location");
-        }
+        assert(cells[location].any());
+        assert(location >= 0 && location < 81);
+
         Value value = cells[location];
         cells[location].reset();
 

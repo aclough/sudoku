@@ -15,7 +15,7 @@ using std::cout, std::endl, std::cerr, std::ifstream, std::string,
 // bits should be set to represent an unknown value, or exactly one bit should be set
 // for a known value.
 // Used inside a Field, every set bit is one available value.
-typedef bitset<10> Value;
+using Value = bitset<10>;
 
 // Class to wrap the Value type when used to represent the remaining possiblities for
 // a row, column, or block.  Mainly provides iniitalization and type safety.

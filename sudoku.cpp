@@ -53,6 +53,7 @@ public:
     Indices (int index) :
         row{index / 9},
         col{index % 9},
+        // 3*(row/3) + (col/3)
         block{(index / 27) * 3 + (index % 9) / 3}
     {}
 

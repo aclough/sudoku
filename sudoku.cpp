@@ -81,6 +81,9 @@ private:
         if (value == 0) {
             throw invalid_argument("Can't set cell to 0.");
         }
+        if (location < 0 || location >= 81) {
+            throw invalid_argument("Invalid location");
+        }
         cells[location] = value;
 
         Indices indices(location);
@@ -93,6 +96,9 @@ private:
     void clear_value(int location) {
         if (!cells[location].any()) {
             throw invalid_argument("Tried to clear already clear cell");
+        }
+        if (location < 0 || location >= 81) {
+            throw invalid_argument("Invalid location");
         }
         Field value = cells[location];
         cells[location].reset();
@@ -113,8 +119,8 @@ private:
 public:
     // A copy of the input that produced this problem for debugging purposes.
     string input;
-    int forceing_passes = 0;
-    int guesses = 0;
+    int forceing_passes{0};
+    int guesses{0};
 
     SudokuProblem(ifstream& input_file) {
         for (int i = 0; i < 9; i++) {
@@ -125,7 +131,7 @@ public:
         }
         string value;
         // Index of the current value being read
-        int i = 0;
+        int i{0};
         while  (input_file >> value) {
             try {
                 int spot_value = stoi(value);
@@ -168,11 +174,11 @@ public:
     bool solve() {
         vector<int> forced_moves;
         while (true) {
-            int solutions_found = 0;
-            int most_constrained_space = 0;
-            int most_constrained_count = 10;
+            int solutions_found{0};
+            int most_constrained_space{0};
+            int most_constrained_count{10};
             Field most_constrained_possibilities;
-            for (int i = 0; i < 81; i++) {
+            for (int i{0}; i < 81; i++) {
                 if (cells[i].count() != 0) {
                     // Already solved
                     continue;

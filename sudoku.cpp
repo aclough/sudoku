@@ -8,39 +8,67 @@
 // of my definitions I'll get a namespace collision.
 using namespace std;
 
-// To try:
-// Make Field its own class
+// A bitset representing all 9 possible numbers that a Sudoku cell could take, plus
+// an extra bit in position 0 to make the indexing easier.
+// This is used directly to represent values on the board, in which case either no
+// bits should be set to represent an unknown value, or exactly one bit should be set
+// for a known value.
+// Used inside a Field, every set bit is one available value.
+typedef bitset<10> Value;
 
-// A type representing the possibilities for a single cell in the Sudoku board.
-// For blocks, rows, and columns, there will be a number of bits set fo the unused
-// values in that location.  For the cells it will be either 0 for a blank cell or
-// have a single value for the filled cell
-// The set is 1 bit larger than is needed to avoid special logic to deal with
-// the 0 position.
-typedef bitset<10> Field;
+// Class to wrap the Value type when used to represent the remaining possiblities for
+// a row, column, or block.  Mainly provides iniitalization and type safety.
+class Field {
+    private:
+        Value data;
+    public:
+        Field() : data(0b11111111110) {}
+        Field(Value init) : data(init) {}
+        bool test(int i) const {
+            return data.test(i);
+        }
+        void remove(Value value) {
+            data &= ~value;
+        }
+        void add(Value value) {
+            data |= value;
+        }
+        Field operator&(const Field &other) {
+            return Field(data & other.data);
+        }
+        int count() const {
+            return data.count();
+        }
+        Value value() const {
+            if (data.count() != 1) {
+                throw invalid_argument("Can only get value for a single solution field");
+            }
+            return data;
+        }
+};
 
 // Constant to initialize the field with all values possible
 const int field_init = 0b1111111110;
 
-string field_to_string(Field field) {
-    if (field.count() > 1) {
-        throw invalid_argument("Can only convert single solution Field to string");
+string field_to_string(Value value) {
+    if (value.count() > 1) {
+        throw invalid_argument("Can only convert single solution Value to string");
     }
 
     string result;
     for (int i = 1; i < 10; i++) {
-        if (field.test(i)) {
+        if (value.test(i)) {
             return std::to_string(i);
         }
     }
     return ".";
 }
 
-vector<Field> get_possible_moves(Field field) {
-    vector<Field> result;
+vector<Value> get_possible_moves(Field field) {
+    vector<Value> result;
     for (int i = 1; i < 10; i++) {
         if (field.test(i)) {
-            result.push_back(Field(1 << i));
+            result.push_back(Value(1 << i));
         }
     }
     return result;
@@ -68,7 +96,7 @@ class SudokuProblem {
 private:
     // 0 for unknown,
     // Bits 1-9 set for known value
-    array<Field, 81> cells;
+    array<Value, 81> cells;
 
     // Stores the remaining unused value in each region.
     array<Field, 9> blocks;
@@ -76,7 +104,7 @@ private:
     array<Field, 9> cols;
     int unsolved_spaces = 81;
 
-    void set_value(const int location, const Field value) {
+    void set_value(const int location, const Value value) {
         if (cells[location].any()) {
             throw invalid_argument("Tried to set already set cell");
         }
@@ -89,9 +117,9 @@ private:
         cells[location] = value;
 
         Indices indices(location);
-        blocks[indices.block] &= ~value;
-        rows[indices.row] &= ~value;
-        cols[indices.col] &= ~value;
+        blocks[indices.block].remove(value);
+        rows[indices.row].remove(value);
+        cols[indices.col].remove(value);
         unsolved_spaces--;
     }
 
@@ -102,13 +130,13 @@ private:
         if (location < 0 || location >= 81) {
             throw invalid_argument("Invalid location");
         }
-        Field value = cells[location];
+        Value value = cells[location];
         cells[location].reset();
 
         Indices indices(location);
-        blocks[indices.block] |= value;
-        rows[indices.row] |= value;
-        cols[indices.col] |= value;
+        blocks[indices.block].add(value);
+        rows[indices.row].add(value);
+        cols[indices.col].add(value);
         unsolved_spaces++;
     }
 
@@ -125,12 +153,6 @@ public:
     int guesses{0};
 
     SudokuProblem(ifstream& input_file) {
-        for (int i = 0; i < 9; i++) {
-            // Making Field a class could obviate this
-            blocks[i] = field_init;
-            rows[i] = field_init;
-            cols[i] = field_init;
-        }
         string value;
         // Index of the current value being read
         int i{0};
@@ -138,7 +160,7 @@ public:
             try {
                 int spot_value = stoi(value);
                 if (spot_value) {
-                    set_value(i, Field(1 << spot_value));
+                    set_value(i, Value(1 << spot_value));
                 }
                 i++;
             } catch (const invalid_argument& e) {
@@ -193,7 +215,7 @@ public:
                 Indices indices(i);
                 Field possibilities = blocks[indices.block] & rows[indices.row] & cols[indices.col];
                 if (possibilities.count() == 1) {
-                    set_value(i, possibilities);
+                    set_value(i, possibilities.value());
                     forced_moves.push_back(i);
                     solutions_found++;
                 } else if (possibilities.count() == 0) {
@@ -217,7 +239,7 @@ public:
             }
 
             // Move to guess and check
-            vector<Field> moves = get_possible_moves(most_constrained_possibilities);
+            vector<Value> moves = get_possible_moves(most_constrained_possibilities);
             guesses++;
             for (auto move: moves) {
                 set_value(most_constrained_space, move);

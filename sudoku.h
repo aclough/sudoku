@@ -1,5 +1,4 @@
-#ifndef my_sudoku_lib
-#define my_sudoku_lib
+#pragma once
 
 typedef struct {
     short value;   // A bit field that says what the final value of that space is.
@@ -25,5 +24,3 @@ int solve_sudoku( sudoku*);
 
 // Takes a sudoku and prints it to the screen
 void print_sudoku( const sudoku*);
-
-#endif

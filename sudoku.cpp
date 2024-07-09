@@ -147,25 +147,18 @@ public:
     int guesses{0};
 
     SudokuProblem(ifstream& input_file) {
-        string value;
-        // Index of the current value being read
         int i{0};
-        while  (input_file >> value) {
-            try {
-                int spot_value = stoi(value);
-                if (spot_value) {
-                    set_value(i, Value(1 << spot_value));
-                }
-                i++;
-            } catch (const invalid_argument& e) {
-                // As long as we have 81 numbers, extraneous values aren't a problem
-            }
-            input += value;
+        int number{0};
+        while (input_file >> number) {
+            assert(number >= 0);
+            assert(number < 10);
+            if(number) set_value(i, Value(1 << number));
+            i++;
+            input += std::to_string(i);
         }
         if (i != 81) {
             cerr << "Got " << i << " numbers" << endl;
             throw invalid_argument("Wrong number of numbers for a sudoku puzzle");
-            // Handle the error (e.g., throw an exception)
         }
 
     }

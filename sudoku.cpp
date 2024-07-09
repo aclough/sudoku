@@ -88,7 +88,7 @@ public:
     {}
 
     void print() const {
-        cout << "Block: " << block << " Row: " <<  row << " Col: " << col << endl;
+        cout << "Block: " << block << " Row: " <<  row << " Col: " << col << "\n";
     }
 };
 
@@ -244,7 +244,7 @@ public:
 };
 
 ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
-    out << sudoku.to_string() << endl;
+    out << sudoku.to_string();
     return out;
 }
 
@@ -262,12 +262,12 @@ int main(int argc, char** argv) {
     input_file.close();
     bool succeeded = problem.solve();
     if (succeeded) {
-        cout << "Solved!" << endl;
+        cout << "Solved!\n";
     } else {
-        cout << "Failed to solve" << endl;
+        cout << "Failed to solve.\n";
     }
-    // cout << problem.forcing_passes << " forcing passes" << endl;
-    // cout << problem.guesses << " guesses" << endl;
+    // cout << problem.forcing_passes << " forcing passes.\n";
+    // cout << problem.guesses << " guesses\n.";
     cout << problem << endl;
     return 0;
 }

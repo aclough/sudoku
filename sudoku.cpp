@@ -35,7 +35,7 @@ class Field {
         void add(Value value) {
             data |= value;
         }
-        Field operator&(const Field &other) const {
+        Field operator&(const Field& other) const {
             return Field(data & other.data);
         }
         int count() const {

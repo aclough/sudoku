@@ -50,7 +50,7 @@ class Field {
 
 // *Note* Fields and Values are both the same size as pointers so there's no benefit to
 // passing them by reference.  They're also small enough that copying them is cheap.
-string field_to_string(Value value) {
+string cell_value_to_string(Value value) {
     // Can only convert single solution Value to string
     assert(value.count() <= 1);
 
@@ -189,7 +189,7 @@ public:
                 result += " ";
             }
 
-            result += field_to_string(cells[i]);
+            result += cell_value_to_string(cells[i]);
         }
         return result;
     }

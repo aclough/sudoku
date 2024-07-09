@@ -148,7 +148,7 @@ public:
     SudokuProblem(string filename) {
         ifstream input_file(filename);
         if (!input_file.is_open()) {
-            cout << "Error opening file" << endl;
+            cout << "Error opening file " << filename << endl;
             throw std::runtime_error("Error opening file");
         }
 

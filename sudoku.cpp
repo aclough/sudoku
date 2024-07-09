@@ -6,8 +6,7 @@
 #include <vector>
 
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
-      std::bitset, std::array, std::vector, std::invalid_argument,
-      std::ostream;
+      std::bitset, std::array, std::vector, std::ostream;
 
 // A bitset representing all 9 possible numbers that a Sudoku cell could take, plus
 // an extra bit in position 0 to make the indexing easier.
@@ -35,7 +34,7 @@ class Field {
         void add(Value value) {
             data |= value;
         }
-        Field operator&(const Field& other) const {
+        Field operator&(Field other) const {
             return Field(data & other.data);
         }
         int count() const {
@@ -43,7 +42,7 @@ class Field {
         }
         Value value() const {
             if (data.count() != 1) {
-                throw invalid_argument("Can only get value for a single solution field");
+                throw std::invalid_argument("Can only get value for a single solution field");
             }
             return data;
         }
@@ -146,7 +145,13 @@ public:
     // How many times we guessed the value rather than forcing it.
     int guesses{0};
 
-    SudokuProblem(ifstream& input_file) {
+    SudokuProblem(string filename) {
+        ifstream input_file(filename);
+        if (!input_file.is_open()) {
+            cout << "Error opening file" << endl;
+            throw std::runtime_error("Error opening file");
+        }
+
         int i{0};
         int number{0};
         while (input_file >> number) {
@@ -156,9 +161,11 @@ public:
             i++;
             input += std::to_string(i);
         }
+        input_file.close();
+
         if (i != 81) {
             cerr << "Got " << i << " numbers" << endl;
-            throw invalid_argument("Wrong number of numbers for a sudoku puzzle");
+            throw std::invalid_argument("Wrong number of numbers for a sudoku puzzle");
         }
 
     }
@@ -253,13 +260,7 @@ int main(int argc, char** argv) {
     if (argc > 1) {
         filename = argv[1];
     }
-    ifstream input_file(filename);
-    if (!input_file.is_open()) {
-        cout << "Error opening file" << endl;
-        return 1;
-    }
-    SudokuProblem problem(input_file);
-    input_file.close();
+    SudokuProblem problem(filename);
     bool succeeded = problem.solve();
     if (succeeded) {
         cout << "Solved!\n";

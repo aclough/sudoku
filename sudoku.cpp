@@ -5,6 +5,10 @@
 #include <iostream>
 #include <vector>
 
+// TODO:  This solver still allocates 84k in heap in O0, comapred to 5.6k in the C
+//        version. To get the same performance I'd have to do something about that,
+//        but that also risks writing in a non-idiomatic style.
+
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
       std::bitset, std::array, std::vector, std::ostream;
 
@@ -134,16 +138,16 @@ private:
     void clear_moves(const vector<int>& moves) {
         for (auto location: moves) {
             clear_value(location);
-            forcing_passes--;
+            forcing_passes_count--;
         }
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.
     string input;
     // How many passes through the different forcings we've made.
-    int forcing_passes{0};
+    int forcing_passes_count{0};
     // How many times we guessed the value rather than forcing it.
-    int guesses{0};
+    int guesses_count{0};
 
     SudokuProblem(string filename) {
         ifstream input_file(filename);
@@ -222,7 +226,7 @@ public:
                     most_constrained_possibilities = possibilities;
                 }
             }
-            forcing_passes++;
+            forcing_passes_count++;
             // Continue working
             if (unsolved_spaces == 0) {
                 // We won!
@@ -234,7 +238,7 @@ public:
 
             // Move to guess and check
             vector<Value> moves = get_possible_moves(most_constrained_possibilities);
-            guesses++;
+            guesses_count++;
             for (auto move: moves) {
                 set_value(most_constrained_space, move);
                 if (solve()) {
@@ -242,7 +246,7 @@ public:
                 }
                 clear_value(most_constrained_space);
             }
-            guesses--;
+            guesses_count--;
             clear_moves(forced_moves);
             return false;
         }
@@ -267,8 +271,8 @@ int main(int argc, char** argv) {
     } else {
         cout << "Failed to solve.\n";
     }
-    // cout << problem.forcing_passes << " forcing passes.\n";
-    // cout << problem.guesses << " guesses\n.";
+    // cout << problem.forcing_passes_count << " forcing passes.\n";
+    // cout << problem.guesses_count << " guesses\n.";
     cout << problem << endl;
     return 0;
 }

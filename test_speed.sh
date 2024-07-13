@@ -2,12 +2,10 @@
 
 echo ""
 echo "Compiling C"
-gcc -O2 tester.c sudoku.c
-mv a.out sudoku_c
+gcc -O2 tester.c sudoku.c -o sudoku_c
 echo ""
 echo "Compiling C++"
-g++ -O2 sudoku.cpp
-mv a.out sudoku_cpp
+g++ -O2 sudoku.cpp -o sudoku_cpp
 echo ""
 echo "Compiling C shared library"
 gcc -O2 -shared -o sudoku.so -fPIC sudoku.c

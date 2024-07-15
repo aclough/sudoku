@@ -8,6 +8,9 @@
 // TODO:  This solver still allocates 84k in heap in O0, comapred to 5.6k in the C
 //        version. To get the same performance I'd have to do something about that,
 //        but that also risks writing in a non-idiomatic style.
+//        The bitset is 8 bytes wide, the size of a pointer, instead of just the 2
+//        bytes I use in other solvers while rolling my own bitset.  However that
+//        isn't quite enough to explain this difference.
 
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
       std::bitset, std::array, std::vector, std::ostream;
@@ -175,6 +178,9 @@ public:
     }
 
     string to_string() const {
+        // Creating an m_string member and turning this into
+        // const string& to_string()
+        // seems to make the solver slightly slower, something I was genuinly unsure about.
         const int size = 81 * 2 // 81 cells, 2 characters per cell
             + 9 * 2 * 2 // Extra spaces for the block boundaries
             + 9 // 9 newlines

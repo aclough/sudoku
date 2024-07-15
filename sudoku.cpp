@@ -82,15 +82,14 @@ vector<Value> get_possible_moves(Field field) {
 
 class Indices {
 public:
-    const int block;
     const int row;
     const int col;
+    const int block;
 
     Indices (int index) :
         row{index / 9},
         col{index % 9},
-        // 3*(row/3) + (col/3)
-        block{(index / 27) * 3 + (index % 9) / 3}
+        block{(row / 3) * 3 + (col / 3)}
     {}
 
     void print() const {

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 
+#include <boost/program_options.hpp>
+
 // TODO:  This solver still allocates 84k in heap in O0, comapred to 5.6k in the C
 //        version. To get the same performance I'd have to do something about that,
 //        but that also risks writing in a non-idiomatic style.
@@ -14,6 +16,8 @@
 
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
       std::bitset, std::array, std::vector, std::ostream;
+
+namespace po = boost::program_options;
 
 // A bitset representing all 9 possible numbers that a Sudoku cell could take, plus
 // an extra bit in position 0 to make the indexing easier.
@@ -145,7 +149,7 @@ private:
     }
 public:
     // A copy of the input that produced this problem for debugging purposes.
-    string input;
+    string starting_input;
     // How many passes through the different forcings we've made.
     int forcing_passes_count{0};
     // How many times we guessed the value rather than forcing it.
@@ -165,7 +169,6 @@ public:
             assert(number < 10);
             if(number) set_value(i, Value(1 << number));
             i++;
-            input += std::to_string(i);
         }
         input_file.close();
 
@@ -173,6 +176,8 @@ public:
             cerr << "Got " << i << " numbers" << endl;
             throw std::invalid_argument("Wrong number of numbers for a sudoku puzzle");
         }
+
+        starting_input = to_string();
 
     }
 
@@ -265,19 +270,48 @@ ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
 }
 
 int main(int argc, char** argv) {
-    string filename = "hard-sudoku.txt";
-    if (argc > 1) {
-        filename = argv[1];
+    po::options_description desc("Sudoku solver options");
+    desc.add_options()
+        ("help", "Produce help message")
+        ("input-file", po::value<string>(), "Input file to load")
+        ("verbose,v", "Enable verbose output")
+        ("iterations", po::value<int>()->default_value(1), "Number of times to solve (for benchmarking)")
+    ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        return 1;
+    }
+
+    string filename;
+    if (vm.count("input-file")) {
+        cout << "Solving " << vm["input-file"].as<string>() << ".\n";
+        filename = vm["input-file"].as<string>();
+    } else {
+        filename = "hard-sudoku.txt";
+    }
+
+    for (int i{0}; i < vm["iterations"].as<int>()-1; i++) {
+        SudokuProblem problem(filename);
+        problem.solve();
     }
     SudokuProblem problem(filename);
     bool succeeded = problem.solve();
+
     if (succeeded) {
         cout << "Solved!\n";
     } else {
         cout << "Failed to solve.\n";
     }
-    // cout << problem.forcing_passes_count << " forcing passes.\n";
-    // cout << problem.guesses_count << " guesses\n.";
+    if (vm.count("verbose")) {
+        cout << problem.starting_input<< "\n\n";
+        cout << "Forcing passes: " << problem.forcing_passes_count << "\n";
+        cout << "Guesses: " << problem.guesses_count << "\n";
+    }
     cout << problem << endl;
     return 0;
 }

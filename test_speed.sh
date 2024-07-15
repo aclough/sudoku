@@ -5,7 +5,7 @@ echo "Compiling C"
 gcc -O2 tester.c sudoku.c -o sudoku_c
 echo ""
 echo "Compiling C++"
-g++ -O2 sudoku.cpp -o sudoku_cpp
+g++ -O2 sudoku.cpp -lboost_program_options -o sudoku_cpp
 echo ""
 echo "Compiling C shared library"
 gcc -O2 -shared -o sudoku.so -fPIC sudoku.c
@@ -23,8 +23,8 @@ echo "C speed 10000 times"
 time for i in {1..10000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
 
 echo ""
-echo "C++ speed 10000 times"
-time for i in {1..10000}; do ./sudoku_cpp hard-sudoku.txt > /dev/null; done
+echo "C++ speed 1,000,000 times"
+time ./sudoku_cpp --iterations 1000000 hard-sudoku.txt > /dev/null
 
 echo ""
 echo "Nim speed 10000 times"

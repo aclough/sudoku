@@ -7,7 +7,7 @@
 
 #include <boost/program_options.hpp>
 
-// TODO:  This solver still allocates 84k in heap in O0, comapred to 5.6k in the C
+// TODO:  This solver still allocates 84k in heap, comapred to 5.6k in the C
 //        version. To get the same performance I'd have to do something about that,
 //        but that also risks writing in a non-idiomatic style.
 //        The bitset is 8 bytes wide, the size of a pointer, instead of just the 2
@@ -144,7 +144,6 @@ private:
     void clear_moves(const vector<int>& moves) {
         for (auto location: moves) {
             clear_value(location);
-            forcing_passes_count--;
         }
     }
 public:
@@ -210,6 +209,7 @@ public:
 
     bool solve() {
         vector<int> forced_moves;
+        int local_forcing_passes{0};
         while (true) {
             int solutions_found{0};
             int most_constrained_space{0};
@@ -236,10 +236,11 @@ public:
                     most_constrained_possibilities = possibilities;
                 }
             }
-            forcing_passes_count++;
+            local_forcing_passes++;
             // Continue working
             if (unsolved_spaces == 0) {
                 // We won!
+                forcing_passes_count += local_forcing_passes;
                 return true;
             }
             if (solutions_found != 0) {
@@ -252,6 +253,7 @@ public:
             for (auto move: moves) {
                 set_value(most_constrained_space, move);
                 if (solve()) {
+                    forcing_passes_count += local_forcing_passes;
                     return true;
                 }
                 clear_value(most_constrained_space);

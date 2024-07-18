@@ -1,4 +1,5 @@
 import os
+from std/strutils import parseInt
 
 const debug = false
 
@@ -39,7 +40,10 @@ const segmentIndices = getAllIndices()
 proc `$`(sudoku: Sudoku): string =
   var str = ""
   for i in 0..80:
-    str &= $sudoku.grid[i]
+    if sudoku.grid[i] == 0:
+      str &= "."
+    else:
+      str &= $sudoku.grid[i]
     let (_, col, row) = segmentIndices[i]
     if col == 8:
       if row mod 3 == 2:
@@ -98,7 +102,7 @@ proc loadSudoku(fileName: string): Sudoku =
   except ValueError:
     echo "Could not parse input file"
   except IOError:
-    echo "IO error"
+    discard
   finally:
     close(file)
 
@@ -155,14 +159,24 @@ proc solve(sudoku: var Sudoku): bool =
 
 var
   m_sudoku: Sudoku
+  file_name: string
+  iteration_count: int
+
 try:
-  m_sudoku = loadSudoku(commandLineParams()[0])
+  file_name = commandLineParams()[0]
 except ValueError:
-  m_sudoku = loadSudoku("puzzle.txt")
+  file_name = "puzzle.txt"
+
+try:
+  iteration_count = parseInt(commandLineParams()[1])
+except ValueError:
+  iteration_count = 1
+
+for i in 0..(iteration_count-1):
+  m_sudoku = loadSudoku(file_name)
+  discard solve(m_sudoku)
+m_sudoku = loadSudoku(file_name)
 echo m_sudoku
-
-echo "Solving"
-
 if solve(m_sudoku):
   echo "Solved it!"
   echo m_sudoku

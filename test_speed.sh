@@ -19,16 +19,16 @@ RUSTFLAGS="-C target-cpu=native" cargo build --release
 cp ./target/release/sudoku_rust sudoku_rust
 
 echo ""
-echo "C speed 10,000 times"
-time for i in {1..10000}; do ./sudoku_c hard-sudoku.txt > /dev/null; done
+echo "C speed 1,000,000 times"
+time ./sudoku_c hard-sudoku.txt 1000000 > /dev/null
 
 echo ""
 echo "C++ speed 1,000,000 times"
 time ./sudoku_cpp --iterations 1000000 hard-sudoku.txt > /dev/null
 
 echo ""
-echo "Nim speed 10,000 times"
-time for i in {1..10000}; do ./sudoku_nim hard-sudoku.txt > /dev/null; done
+echo "Nim speed 1,000,000 times"
+time  ./sudoku_nim hard-sudoku.txt 1000000 > /dev/null
 
 echo ""
 echo "Rust speed 1,000,000 times"

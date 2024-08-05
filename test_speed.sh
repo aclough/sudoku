@@ -27,6 +27,10 @@ echo "C++ speed 1,000,000 times"
 time ./sudoku_cpp --iterations 1000000 hard-sudoku.txt > /dev/null
 
 echo ""
+echo "C++ speed 1,000,000 times, parallel"
+time ./sudoku_cpp --iterations 1000000 -p hard-sudoku.txt > /dev/null
+
+echo ""
 echo "Nim speed 1,000,000 times"
 time  ./sudoku_nim hard-sudoku.txt 1000000 > /dev/null
 

@@ -2,6 +2,7 @@
 #include <bitset>
 #include <cassert>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <vector>
 
@@ -26,6 +27,8 @@ namespace po = boost::program_options;
 // for a known value.
 // Used inside a Field, every set bit is one available value.
 using Value = bitset<10>;
+
+const int threads = std::thread::hardware_concurrency();
 
 // Class to wrap the Value type when used to represent the remaining possiblities for
 // a row, column, or block.  Mainly provides iniitalization and type safety.
@@ -207,13 +210,17 @@ public:
         return result;
     }
 
+    void operator()() {
+        solve();
+    }
+
     bool solve() {
         vector<int> forced_moves;
         int local_forcing_passes{0};
         while (true) {
             int solutions_found{0};
             int most_constrained_space{0};
-            int most_constrained_count{10};
+            int most_constrained_count{10}; // Higher than any actual space
             Field most_constrained_possibilities;
             for (int i{0}; i < 81; i++) {
                 if (cells[i].count() != 0) {
@@ -264,11 +271,26 @@ public:
         }
     }
 
+    bool succeeded() {
+        return unsolved_spaces == 0;
+    }
+
 };
 
 ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
     out << sudoku.to_string();
     return out;
+}
+
+SudokuProblem solve_n(const string& filename, int iterations) {
+    SudokuProblem problem(filename);
+    for (int i{0}; i < iterations; i++) {
+        problem.solve();
+        if (i < iterations - 1) {
+            problem = SudokuProblem(filename);
+        }
+    }
+    return problem;
 }
 
 int main(int argc, char** argv) {
@@ -277,6 +299,7 @@ int main(int argc, char** argv) {
         ("help", "Produce help message")
         ("input-file", po::value<string>(), "Input file to load")
         ("verbose,v", "Enable verbose output")
+        ("parallel,p", "Enable parallel solving")
         ("iterations", po::value<int>()->default_value(1), "Number of times to solve (for benchmarking)")
     ;
 
@@ -297,14 +320,26 @@ int main(int argc, char** argv) {
         filename = "hard-sudoku.txt";
     }
 
-    for (int i{0}; i < vm["iterations"].as<int>()-1; i++) {
-        SudokuProblem problem(filename);
-        problem.solve();
-    }
-    SudokuProblem problem(filename);
-    bool succeeded = problem.solve();
+    int iterations = vm["iterations"].as<int>();
 
-    if (succeeded) {
+    SudokuProblem problem(filename);
+
+    if (vm.count("parallel")) {
+        int extra = iterations % threads;
+        vector<std::future<SudokuProblem> > results;
+        for (int i = 0; i < threads; i++) {
+            int n = iterations / threads + (i < extra ? 1 : 0);
+            results.push_back(std::async(solve_n, filename, n));
+        }
+        for (auto& thread : results) {
+            thread.wait();
+        }
+        problem = results[0].get();
+    } else {
+        problem = solve_n(filename, iterations);
+    }
+
+    if (problem.succeeded()) {
         cout << "Solved!\n";
     } else {
         cout << "Failed to solve.\n";
@@ -313,6 +348,9 @@ int main(int argc, char** argv) {
         cout << problem.starting_input<< "\n\n";
         cout << "Forcing passes: " << problem.forcing_passes_count << "\n";
         cout << "Guesses: " << problem.guesses_count << "\n";
+        if (vm.count("parallel")) {
+            cout << "Threads used: " << threads << "\n";
+        }
     }
     cout << problem << endl;
     return 0;

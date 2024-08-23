@@ -36,7 +36,11 @@ time  ./sudoku_nim hard-sudoku.txt 1000000 > /dev/null
 
 echo ""
 echo "Rust speed 1,000,000 times"
-time ./sudoku_rust hard-sudoku.txt 1000000 > /dev/null
+time ./sudoku_rust -f hard-sudoku.txt -c 1000000 > /dev/null
+
+echo ""
+echo "Rust speed 1,000,000 times, parallel"
+time ./sudoku_rust -p -f hard-sudoku.txt -c 1000000 > /dev/null
 
 echo ""
 echo "Python speed 1,000 times"

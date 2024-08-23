@@ -1,9 +1,12 @@
 // Rust sudoku implementation
 // This is a heuristic guided search with backout like the Nim version
 
+use clap::Parser;
 use std::assert;
-use std::env;
 use std::fs;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::available_parallelism;
 
 // TODO
 //   Threading?
@@ -15,6 +18,7 @@ use std::fs;
 // or a 2 could be there.
 type Field = u16;
 
+#[derive(Copy, Clone)]
 struct Sudoku {
     // The final derived value for each cell. 0 if still unknown or a bitfield with a single
     // bit set if the solution has been found. Stored as a field to better interface with
@@ -79,7 +83,6 @@ impl Sudoku {
     }
 
     fn solve(&mut self) -> bool {
-
         // Stage once, do as many forced moves as possible
         // Keep trying until they stop coming
         let mut eager_moves: Vec<usize> = Vec::with_capacity(16);
@@ -131,13 +134,12 @@ impl Sudoku {
             self.back_out_moves(eager_moves);
             // None of the guesses worked, we're on a bad branch.  Abort
             return false;
-
         }
     }
 }
 
-fn val_to_field(x: u8) -> Field  {
-    1 << (x-1)
+fn val_to_field(x: u8) -> Field {
+    1 << (x - 1)
 }
 
 fn field_to_val(x: Field) -> u8 {
@@ -193,17 +195,17 @@ fn get_indices(i: usize) -> (usize, usize, usize) {
 }
 
 fn load_sudoku(filename: &String) -> Sudoku {
-
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
-    let start_possibilties:Field = 0x1FF;
-    let mut s = Sudoku { cells: [0; 81],
-                         blocks: [start_possibilties; 9],
-                         cols: [start_possibilties; 9],
-                         rows: [start_possibilties; 9],
-                         remaining: 81};
+    let start_possibilties: Field = 0x1FF;
+    let mut s = Sudoku {
+        cells: [0; 81],
+        blocks: [start_possibilties; 9],
+        cols: [start_possibilties; 9],
+        rows: [start_possibilties; 9],
+        remaining: 81,
+    };
 
-    let contents = fs::read_to_string(filename)
-        .expect("Something went wrong reading the file");
+    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
     for (i, c) in (0..81).zip(contents.split_whitespace()) {
         let x = c.parse().unwrap();
         if x == 0 {
@@ -212,38 +214,77 @@ fn load_sudoku(filename: &String) -> Sudoku {
         s.set_value(val_to_field(x), i)
     }
 
-    return s
+    return s;
 }
 
 impl<'a> IntoIterator for &'a Sudoku {
-   type Item = &'a Field;
-   type IntoIter = std::slice::Iter<'a, Field>;
+    type Item = &'a Field;
+    type IntoIter = std::slice::Iter<'a, Field>;
 
-   fn into_iter(self) -> Self::IntoIter {
-       self.cells.iter()
-   }
+    fn into_iter(self) -> Self::IntoIter {
+        self.cells.iter()
+    }
+}
+
+fn solve_n(filename: &String, n: usize) -> Sudoku {
+    // Solves a sudoku N times, and then returns the last Sudoku
+    let mut s = load_sudoku(&filename);
+    s.solve();
+    for _ in 1..n {
+        s = load_sudoku(&filename);
+        s.solve();
+    }
+    return s;
+}
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, default_value = "puzzle.txt")]
+    filename: String,
+    #[arg(short, long, default_value_t = 1)]
+    count: usize,
+    #[arg(short, long, action = clap::ArgAction::SetTrue)]
+    parallel: bool,
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
 
-    let file = if args.len() > 1 {
-        args[1].clone()
-    } else {
-        "puzzle.txt".to_string()
-    };
+    let file = Arc::new(args.filename);
+    let count = args.count;
 
-    let count: u32 = if args.len() > 2 {
-        args[2].trim().parse().expect("Please type a number!")
-    } else {
-        1
-    };
     println!("Solving {file} {count} times");
 
-    for i in 0..count {
-        let mut s = load_sudoku(&file);
-        if i == 0 {s.print();}
-        s.solve();
-        if i == 0 {s.print();}
-    }
+    let s =
+    if args.parallel {
+        println!("Parallel");
+        let thread_count = available_parallelism().unwrap().get();
+        println!("Spawning {thread_count} threads");
+
+        let mut handles: Vec<thread::JoinHandle<()>> = vec![];
+        let shared_results = Arc::new(Mutex::new(Vec::new()));
+
+        for i in 0..thread_count {
+            let thread_results = Arc::clone(&shared_results);
+            let thread_file = Arc::clone(&file);
+            let n = count / thread_count + if i < (count % thread_count) {1} else {0};
+            let handle = thread::spawn(move || {
+                let this_result = solve_n(&thread_file, n);
+                let mut results = thread_results.lock().unwrap();
+                results.push(this_result);
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+        let final_results = shared_results.lock().unwrap();
+        final_results[0]
+
+    } else {
+        solve_n(&file, args.count)
+    };
+    s.print();
 }

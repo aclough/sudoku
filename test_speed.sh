@@ -47,7 +47,7 @@ time ./sudoku_rust -p -f hard-sudoku.txt -c 1000000 > /dev/null
 
 echo ""
 echo "Zig speed calling C 100,000 times"
-time ./sudoku-with-c-zig hard-sudoku.txt > /dev/null
+time ./sudoku-with-c-zig hard-sudoku.txt 100000 > /dev/null
 
 echo ""
 echo "Python speed 1,000 times"

@@ -14,6 +14,17 @@
 //        The bitset is 8 bytes wide, the size of a pointer, instead of just the 2
 //        bytes I use in other solvers while rolling my own bitset.  However that
 //        isn't quite enough to explain this difference.
+//
+//        Looking at bitset implementation, the template instantiates an array of
+//        unsigned longs (64 bits) to store the bits.  No template specialization
+//        for cases where the bitset is small enough to fit in a single unsigned
+//        long. So in addition to using much more memory, we have the array offset
+//        calculation overhead for every operation.  I guess there's no way to
+//        specialize on a range of values and doing specialization bitset<1>
+//        through bitset<64> would be unreasonable.
+//
+//        This means that the performance delta is potentially entirely due to using
+//        the standard library bitset instead of rolling my own.
 
 using std::cout, std::endl, std::cerr, std::ifstream, std::string,
       std::bitset, std::array, std::vector, std::ostream;
@@ -36,7 +47,7 @@ class Field {
     private:
         Value data;
     public:
-        // Nine 1s then a 0 to represent the 9 possible values
+        // Nine 1s then a 0 to represent the 9 possible values (can't fill in a 0)
         Field() : data(0b11111111110) {}
         Field(Value init) : data(init) {}
         bool test(int i) const {

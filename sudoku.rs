@@ -147,21 +147,7 @@ fn field_to_val(x: Field) -> u8 {
         return 0;
     }
     assert!(x.count_ones() == 1);
-    // There's a trailing_zeros function that could in theory be used to solve this but I tested it
-    // out and it ends up super slow.
-    let mut val = 1u8;
-    let mut x = x;
-    while x > 0 {
-        if 1 == (x % 2) {
-            return val;
-        } else {
-            val += 1;
-            x >>= 1;
-        }
-        assert!(x != 0);
-    }
-    // Impossible to get here
-    unreachable!()
+    return x.trailing_zeros() as u8 + 1;
 }
 
 fn field_to_vals(x: Field) -> Vec<u8> {

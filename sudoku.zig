@@ -4,7 +4,7 @@ const std = @import("std");
 // Using u16 for consistency with other implementations
 const Field = u16;
 
-const max_eager = 10;
+const max_eager = 91;
 
 // Structure to represent a Sudoku puzzle
 const Sudoku = struct {
@@ -103,7 +103,7 @@ const Sudoku = struct {
                 }
             }
 
-            if (solved_count != 0 and eager_count < max_eager) {
+            if (solved_count != 0) {
                 // If we're finding moves by elimination don't start guessing yet, just keep on
                 // solving this way
                 continue;

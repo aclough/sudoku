@@ -245,23 +245,17 @@ fn loadSudoku(filename: []const u8, allocator: std.mem.Allocator) !Sudoku {
 
 // Solve a Sudoku puzzle n times and return the last solved puzzle
 fn solveN(filename: []const u8, n: usize, allocator: std.mem.Allocator) !Sudoku {
-    var s = try loadSudoku(filename, allocator);
+    const original = try loadSudoku(filename, allocator);
+    var s = original;
     
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    defer arena.deinit();
-    
-    _ = s.solve(arena.allocator());
-
-    // If there are more iterations, solve them
-    if (n > 1) {
-        for (1..n) |_| {
-            s = try loadSudoku(filename, allocator);
-            
-            arena.deinit();
-            arena = std.heap.ArenaAllocator.init(allocator);
-            
-            _ = s.solve(arena.allocator());
-        }
+    for (0..n) |_| {
+        var arena = std.heap.ArenaAllocator.init(allocator);
+        defer arena.deinit();
+        
+        _ = s.solve(arena.allocator());
+        
+        // Make a copy of the original for the next iteration (if any)
+        s = original;
     }
 
     return s;

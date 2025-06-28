@@ -214,10 +214,12 @@ impl<'a> IntoIterator for &'a Sudoku {
 
 fn solve_n(filename: &String, n: usize) -> Sudoku {
     // Solves a sudoku N times, and then returns the last Sudoku
-    let mut s = load_sudoku(&filename);
+    // Load the initial state once and copy it for each iteration
+    let initial_sudoku = load_sudoku(&filename);
+    let mut s = initial_sudoku.clone();
     s.solve();
     for _ in 1..n {
-        s = load_sudoku(&filename);
+        s = initial_sudoku.clone();
         s.solve();
     }
     return s;
@@ -248,17 +250,24 @@ fn main() {
         let thread_count = available_parallelism().unwrap().get();
         println!("Spawning {thread_count} threads");
 
+        // Load initial sudoku once and share it across threads
+        let initial_sudoku = Arc::new(load_sudoku(&file));
         let mut handles: Vec<thread::JoinHandle<()>> = vec![];
         let shared_results = Arc::new(Mutex::new(Vec::new()));
 
         for i in 0..thread_count {
             let thread_results = Arc::clone(&shared_results);
-            let thread_file = Arc::clone(&file);
+            let thread_initial = Arc::clone(&initial_sudoku);
             let n = count / thread_count + if i < (count % thread_count) {1} else {0};
             let handle = thread::spawn(move || {
-                let this_result = solve_n(&thread_file, n);
+                let mut s = thread_initial.as_ref().clone();
+                s.solve();
+                for _ in 1..n {
+                    s = thread_initial.as_ref().clone();
+                    s.solve();
+                }
                 let mut results = thread_results.lock().unwrap();
-                results.push(this_result);
+                results.push(s);
             });
             handles.push(handle);
         }

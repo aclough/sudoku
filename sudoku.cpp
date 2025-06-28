@@ -194,6 +194,13 @@ public:
 
     }
 
+    // Copy constructor to enable efficient copying
+    SudokuProblem(const SudokuProblem& other) 
+        : cells(other.cells), blocks(other.blocks), rows(other.rows), cols(other.cols),
+          unsolved_spaces(other.unsolved_spaces), starting_input(other.starting_input),
+          forcing_passes_count(0), guesses_count(0) {
+    }
+
     string to_string() const {
         // Creating an m_string member and turning this into
         // const string& to_string()
@@ -294,11 +301,13 @@ ostream& operator<<(ostream &out, SudokuProblem const& sudoku) {
 }
 
 SudokuProblem solve_n(const string& filename, int iterations) {
-    SudokuProblem problem(filename);
+    // Load the initial state once and copy it for each iteration
+    SudokuProblem initial_problem(filename);
+    SudokuProblem problem(initial_problem);
     for (int i{0}; i < iterations; i++) {
         problem.solve();
         if (i < iterations - 1) {
-            problem = SudokuProblem(filename);
+            problem = SudokuProblem(initial_problem);
         }
     }
     return problem;

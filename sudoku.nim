@@ -106,6 +106,9 @@ proc loadSudoku(fileName: string): Sudoku =
   finally:
     close(file)
 
+proc copySudoku(original: Sudoku): Sudoku =
+  result = original
+
 # I'm not sure that this template actually buys me any real clarity over
 # just substituting the code manually since it's only used twice and people
 # looking this this will probably be surprised by the fact that it causes
@@ -159,6 +162,7 @@ proc solve(sudoku: var Sudoku): bool =
 
 var
   m_sudoku: Sudoku
+  initial_sudoku: Sudoku
   file_name: string
   iteration_count: int
 
@@ -172,10 +176,13 @@ try:
 except ValueError:
   iteration_count = 1
 
+# Load the sudoku data once and store the initial state
+initial_sudoku = loadSudoku(file_name)
+
 for i in 0..(iteration_count-1):
-  m_sudoku = loadSudoku(file_name)
+  m_sudoku = copySudoku(initial_sudoku)
   discard solve(m_sudoku)
-m_sudoku = loadSudoku(file_name)
+m_sudoku = copySudoku(initial_sudoku)
 echo m_sudoku
 if solve(m_sudoku):
   echo "Solved it!"

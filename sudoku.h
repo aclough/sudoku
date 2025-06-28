@@ -17,6 +17,9 @@ typedef struct {
 // structure
 int load_sudoku( sudoku*, const char*);
 
+// Copy the state of a sudoku problem
+void copy_sudoku(sudoku * destination, const sudoku * source);
+
 // Takes the first sudoku structure passed in and iterates solving it.  It
 // returns 0 if a solution is found, and -1 if it can no longer make progress.
 int solve_sudoku( sudoku*);

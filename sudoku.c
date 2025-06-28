@@ -17,7 +17,6 @@ static int solve_block(block *);
 static inline int is_popcount_one(short);
 static inline int popcount(short);
 static inline int get_most_constrained_space(const sudoku *);
-static void copy_sudoku(sudoku * destination, const sudoku * source);
 
 
 // Takes in a sudoku puzzle and optionally it's solution and

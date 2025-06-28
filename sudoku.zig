@@ -4,6 +4,8 @@ const std = @import("std");
 // Using u16 for consistency with other implementations
 const Field = u16;
 
+const max_eager = 10;
+
 // Structure to represent a Sudoku puzzle
 const Sudoku = struct {
     // The final derived value for each cell. 0 if still unknown or a bitfield with a single
@@ -57,18 +59,18 @@ const Sudoku = struct {
     }
 
     // Back out moves from a list of locations
-    pub fn backOutMoves(self: *Sudoku, eager_moves: std.ArrayList(usize)) void {
-        for (eager_moves.items) |guess| {
+    pub fn backOutMoves(self: *Sudoku, eager_moves: [max_eager]usize, eager_count: usize) void {
+        for (eager_moves[0..eager_count]) |guess| {
             self.clearValue(guess);
         }
     }
 
     // Solve the Sudoku puzzle
-    pub fn solve(self: *Sudoku, allocator: std.mem.Allocator) bool {
+    pub fn solve(self: *Sudoku) bool {
         // Stage once, do as many forced moves as possible
         // Keep trying until they stop coming
-        var eager_moves = std.ArrayList(usize).init(allocator);
-        defer eager_moves.deinit();
+        var eager_moves: [max_eager]usize = undefined;
+        var eager_count: usize = 0;
 
         while (true) {
             var solved_count: usize = 0;
@@ -88,10 +90,11 @@ const Sudoku = struct {
                 if (count == 1) {
                     self.setValue(possibles, i);
                     solved_count += 1;
-                    eager_moves.append(i) catch unreachable;
+                    eager_moves[eager_count] = i;
+                    eager_count += 1;
                 } else if (count == 0) {
                     // We're down a blind alley, abort
-                    self.backOutMoves(eager_moves);
+                    self.backOutMoves(eager_moves, eager_count);
                     return false;
                 } else if (count < lowest_count) {
                     lowest_count = count;
@@ -100,7 +103,7 @@ const Sudoku = struct {
                 }
             }
 
-            if (solved_count != 0) {
+            if (solved_count != 0 and eager_count < max_eager) {
                 // If we're finding moves by elimination don't start guessing yet, just keep on
                 // solving this way
                 continue;
@@ -109,18 +112,17 @@ const Sudoku = struct {
                 return true;
             }
 
-            const possibles = fieldToVals(lowest_possibles, allocator);
-            defer possibles.deinit();
+            const possibles = fieldToVals(lowest_possibles);
 
-            for (possibles.items) |guess| {
+            for (possibles.vals[0..possibles.count]) |guess| {
                 self.setValue(valToField(guess), lowest_space);
-                if (self.solve(allocator)) {
+                if (self.solve()) {
                     return true;
                 }
                 self.clearValue(lowest_space);
             }
 
-            self.backOutMoves(eager_moves);
+            self.backOutMoves(eager_moves, eager_count);
             // None of the guesses worked, we're on a bad branch. Abort
             return false;
         }
@@ -129,7 +131,7 @@ const Sudoku = struct {
     // Print the Sudoku board
     pub fn print(self: *const Sudoku) void {
         const stdout = std.io.getStdOut().writer();
-        
+
         for (0..81) |i| {
             if (i == 0) {
                 // First row
@@ -178,24 +180,25 @@ fn fieldToVal(x: Field) u8 {
 }
 
 // Convert a field to a list of possible values
-fn fieldToVals(x: Field, allocator: std.mem.Allocator) std.ArrayList(u8) {
-    var ret = std.ArrayList(u8).init(allocator);
-
+fn fieldToVals(x: Field) struct { vals: [9]u8, count: usize } {
+    var vals: [9]u8 = undefined;
+    var count: usize = 0;
     if (x == 0) {
-        return ret;
+        return .{ .vals = vals, .count = 0};
     }
 
     var val: u8 = 1;
     var field = x;
     while (field > 0) {
         if ((field & 1) == 1) {
-            ret.append(val) catch unreachable;
+            vals[count] = val;
+            count += 1;
         }
         val += 1;
         field >>= 1;
     }
 
-    return ret;
+    return .{ .vals = vals, .count = count};
 }
 
 // Load a Sudoku from a file
@@ -215,14 +218,14 @@ fn loadSudoku(filename: []const u8, allocator: std.mem.Allocator) !Sudoku {
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         // Skip empty lines
         if (line.len == 0) continue;
-        
+
         var it = std.mem.tokenizeAny(u8, line, " \t");
         while (it.next()) |token| {
             if (token.len == 0) continue;
-            
+
             const x = try std.fmt.parseInt(u8, token, 10);
             try numbers.append(x);
-            
+
             // Debugging: print the numbers being read
             // std.debug.print("Read number: {d}\n", .{x});
         }
@@ -247,15 +250,12 @@ fn loadSudoku(filename: []const u8, allocator: std.mem.Allocator) !Sudoku {
 fn solveN(filename: []const u8, n: usize, allocator: std.mem.Allocator) !Sudoku {
     const original = try loadSudoku(filename, allocator);
     var s = original;
-    
+
     for (0..n) |_| {
-        var arena = std.heap.ArenaAllocator.init(allocator);
-        defer arena.deinit();
-        
-        _ = s.solve(arena.allocator());
-        
-        // Make a copy of the original for the next iteration (if any)
+        // Take a copy of the original
         s = original;
+
+        _ = s.solve();
     }
 
     return s;
@@ -275,7 +275,7 @@ pub fn main() !void {
 
     if (args.len > 1) {
         filename = args[1];
-        
+
         if (args.len > 2) {
             iterations = try std.fmt.parseInt(usize, args[2], 10);
         }

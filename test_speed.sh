@@ -17,9 +17,14 @@ echo ""
 echo "Compiling Rust"
 RUSTFLAGS="-C target-cpu=native" cargo build --release
 cp ./target/release/sudoku_rust sudoku_rust
+echo ""
 echo "Compiling Zig calling C"
 zig build-exe sudoku-with-c.zig sudoku.c -lc -I.
 mv sudoku-with-c sudoku-with-c-zig
+echo ""
+echo "Compiling pure Zig"
+zig build-exe sudoku.zig -O ReleaseFast
+mv sudoku sudoku_zig
 
 echo ""
 echo "C speed 1,000,000 times"
@@ -46,8 +51,12 @@ echo "Rust speed 1,000,000 times, parallel"
 time ./sudoku_rust -p -f hard-sudoku.txt -c 1000000 > /dev/null
 
 echo ""
-echo "Zig speed calling C 100,000 times"
-time ./sudoku-with-c-zig hard-sudoku.txt 100000 > /dev/null
+echo "Zig speed calling C 1,000,000 times"
+time ./sudoku-with-c-zig hard-sudoku.txt 1000000 > /dev/null
+
+echo ""
+echo "Pure Zig speed 1,000,000 times"
+time ./sudoku_zig hard-sudoku.txt 1000000 > /dev/null
 
 echo ""
 echo "Python speed 1,000 times"

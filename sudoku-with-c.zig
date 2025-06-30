@@ -18,14 +18,16 @@ pub fn main() !void {
         }
     }
 
+    var master_puzzle: c.sudoku = undefined;
     var puzzle: c.sudoku = undefined;
     var i: u32 = 0;
+    const loaded = c.load_sudoku(&master_puzzle, filename);
+    if (loaded != 0) {
+        std.debug.print("Failed to load puzzle\n", .{});
+        return;
+    }
     while (i < iterations) : (i += 1) {
-        const loaded = c.load_sudoku(&puzzle, filename);
-        if (loaded != 0) {
-            std.debug.print("Failed to load puzzle\n", .{});
-            return;
-        }
+        c.copy_sudoku(&puzzle, &master_puzzle);
         const solved = c.solve_sudoku(&puzzle);
         if (solved != 0) {
             std.debug.print("Failed to solve puzzle\n", .{});

@@ -33,7 +33,7 @@ pub fn main() !void {
             std.debug.print("Failed to solve puzzle\n", .{});
             return;
         }
-        if (i == (100_000 - 1)) {
+        if (i == (iterations - 1)) {
             std.debug.print("Solved puzzle\n", .{});
             c.print_sudoku(&puzzle);
         }

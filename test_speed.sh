@@ -11,7 +11,7 @@ echo "Compiling C shared library"
 gcc -O2 -shared -o sudoku.so -fPIC sudoku.c
 echo ""
 echo "Compiling Nim"
-nim-lang-lts-1.nim c -d:release --verbosity:0 sudoku.nim
+nim c -d:release --verbosity:0 sudoku.nim
 mv sudoku sudoku_nim
 echo ""
 echo "Compiling Rust"

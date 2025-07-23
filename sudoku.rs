@@ -4,6 +4,7 @@
 use clap::Parser;
 use std::assert;
 use std::fs;
+use std::fs::read_to_string;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::available_parallelism;
@@ -180,7 +181,7 @@ fn get_indices(i: usize) -> (usize, usize, usize) {
     (blk, col, row)
 }
 
-fn load_sudoku(filename: &String) -> Sudoku {
+fn load_sudoku(file: &String) -> Sudoku {
     // Bits 1 through 9 are set since any of those might be a valid guess to start with.
     let start_possibilties: Field = 0x1FF;
     let mut s = Sudoku {
@@ -191,7 +192,7 @@ fn load_sudoku(filename: &String) -> Sudoku {
         remaining: 81,
     };
 
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = fs::read_to_string(file).expect("Something went wrong reading the file");
     for (i, c) in (0..81).zip(contents.split_whitespace()) {
         let x = c.parse().unwrap();
         if x == 0 {
@@ -225,6 +226,37 @@ fn solve_n(filename: &String, n: usize) -> Sudoku {
     return s;
 }
 
+fn solve_alt_format(filename: &String) {
+    let mut count = 0;
+    for line in read_to_string(filename).unwrap().lines() {
+        if line.len() != 81 {
+            println!("Solving {line}");
+            continue;
+        }
+
+        let start_possibilties: Field = 0x1FF;
+        let mut s = Sudoku {
+            cells: [0; 81],
+            blocks: [start_possibilties; 9],
+            cols: [start_possibilties; 9],
+            rows: [start_possibilties; 9],
+            remaining: 81,
+        };
+        for (i, c) in (0..81).zip(line.chars()) {
+            let x = c.to_digit(10).unwrap() as u8;
+            if x == 0 {
+                continue;
+            }
+            s.set_value(val_to_field(x), i)
+        }
+        s.solve();
+        count += 1;
+        if count % 1000 == 0 {
+            println!("  {count}");
+        }
+    }
+}
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -234,6 +266,8 @@ struct Args {
     count: usize,
     #[arg(short, long, action = clap::ArgAction::SetTrue)]
     parallel: bool,
+    #[arg(short, long, action = clap::ArgAction::SetTrue)]
+    alt_format: bool,
 }
 
 fn main() {
@@ -242,7 +276,13 @@ fn main() {
     let file = Arc::new(args.filename);
     let count = args.count;
 
+    if args.alt_format {
+        solve_alt_format(&file);
+        return;
+    }
+
     println!("Solving {file} {count} times");
+
 
     let s =
     if args.parallel {

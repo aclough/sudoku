@@ -129,24 +129,27 @@ const Sudoku = struct {
     }
 
     // Print the Sudoku board
-    pub fn print(self: *const Sudoku) void {
-        const stdout = std.io.getStdOut().writer();
+    pub fn print(self: *const Sudoku) !void {
+        const stdout_file = std.fs.File.stdout();
+        var buffer: [2048]u8 = undefined;
+        var stdout = stdout_file.writer(&buffer);
 
         for (0..81) |i| {
             if (i == 0) {
                 // First row
             } else if (i % 27 == 0) {
-                stdout.print("\n\n", .{}) catch unreachable;
+                stdout.interface.print("\n\n", .{}) catch unreachable;
             } else if (i % 9 == 0) {
-                stdout.print("\n", .{}) catch unreachable;
+                stdout.interface.print("\n", .{}) catch unreachable;
             } else if (i % 3 == 0) {
-                stdout.print("   ", .{}) catch unreachable;
+                stdout.interface.print("   ", .{}) catch unreachable;
             } else {
-                stdout.print(" ", .{}) catch unreachable;
+                stdout.interface.print(" ", .{}) catch unreachable;
             }
-            stdout.print("{d}", .{fieldToVal(self.cells[i])}) catch unreachable;
+            stdout.interface.print("{d}", .{fieldToVal(self.cells[i])}) catch unreachable;
         }
-        stdout.print("\n\n", .{}) catch unreachable;
+        stdout.interface.print("\n\n", .{}) catch unreachable;
+        try stdout.interface.flush();
     }
 };
 
@@ -208,14 +211,14 @@ fn loadSudoku(filename: []const u8, allocator: std.mem.Allocator) !Sudoku {
     const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
 
-    var buf_reader = std.io.bufferedReader(file.reader());
-    var in_stream = buf_reader.reader();
-
     var buf: [1024]u8 = undefined;
-    var numbers = std.ArrayList(u8).init(allocator);
-    defer numbers.deinit();
 
-    while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    var reader = file.reader(&buf);
+
+    var numbers: std.ArrayList(u8) = .empty;
+    defer numbers.deinit(allocator);
+
+    while (try reader.interface.takeDelimiter('\n')) |line| {
         // Skip empty lines
         if (line.len == 0) continue;
 
@@ -224,7 +227,7 @@ fn loadSudoku(filename: []const u8, allocator: std.mem.Allocator) !Sudoku {
             if (token.len == 0) continue;
 
             const x = try std.fmt.parseInt(u8, token, 10);
-            try numbers.append(x);
+            try numbers.append(allocator, x);
 
             // Debugging: print the numbers being read
             // std.debug.print("Read number: {d}\n", .{x});
@@ -284,5 +287,5 @@ pub fn main() !void {
     std.debug.print("Solving {s} {d} times\n", .{ filename, iterations });
 
     var s = try solveN(filename, iterations, allocator);
-    s.print();
+    try s.print();
 }
